@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77.0.3,<82"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-agent-memory"
+version = "0.2.0"
+description = "Portable local-first memory and selective knowledge retrieval"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+dependencies = [
+  "pypdfium2>=4.30,<6",
+  "pypdf>=5.9,<7",
+  "PyYAML>=6.0.3,<7",
+]
+
+[project.scripts]
+amem = "agent_memory.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent_memory = ["resources/*.json", "resources/demo/*.md", "resources/demo/*.jsonl"]

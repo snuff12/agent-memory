@@ -1,0 +1,30 @@
+# All real configuration and runtime data stay private.
+/config.json
+/.state/
+/.amem/
+/vault/
+/knowledge/
+/feedback/
+/runtime/
+/implementation/
+/experiments/
+/eval/
+*.sqlite3*
+*.db
+fingerprint.key
+*.log
+.env
+.env.*
+!.env.example
+
+# Local build and development output.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+.pytest_cache/
+.ruff_cache/
+.DS_Store

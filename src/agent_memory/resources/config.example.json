@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "database": ".state/index.sqlite3",
+  "ingestion": {
+    "chunk_chars": 2400,
+    "chunk_overlap_chars": 240,
+    "max_text_file_bytes": 4000000,
+    "max_pdf_file_bytes": 50000000,
+    "max_archive_uncompressed_bytes": 80000000,
+    "python_chunking": "line"
+  },
+  "retrieval": {
+    "default_results": 5,
+    "default_snippet_chars": 240,
+    "default_context_tokens": 1800
+  },
+  "operations": {"sync_max_age_hours": 8},
+  "storage": {"secure_delete": true},
+  "feedback": {
+    "auto_record_zero_results": false,
+    "max_records": 1000,
+    "resolved_retention_days": 180
+  },
+  "sources": [
+    {
+      "name": "research",
+      "path": "knowledge",
+      "description": "Your own documents and project references.",
+      "kind": "knowledge",
+      "trust": "working",
+      "priority": 1.0,
+      "max_depth": 12,
+      "include_extensions": [".md", ".txt", ".rst", ".pdf", ".html", ".htm", ".docx", ".pptx", ".xlsx", ".hwpx", ".py", ".ts", ".tsx", ".js", ".json", ".yaml", ".yml", ".toml"]
+    },
+    {
+      "name": "vault",
+      "path": "vault",
+      "description": "Explicitly selected memories; inbox cards require review.",
+      "kind": "curated_memory",
+      "trust": "reviewed_or_inbox",
+      "priority": 1.5,
+      "max_depth": 8,
+      "include_extensions": [".md"],
+      "exclude_globs": ["README.md", "SCHEMA.md", "index.md", "log.md", "*/README.md"]
+    }
+  ]
+}

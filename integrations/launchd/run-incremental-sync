@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+umask 077
+
+memory_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
+memory_home=${AMEM_HOME:-$HOME/.local/share/agent-memory}
+log_dir=$memory_home/.state/logs
+stdout_log=$log_dir/launchd.stdout.log
+stderr_log=$log_dir/launchd.stderr.log
+max_log_bytes=1048576
+
+if [ ! -f "$memory_home/config.json" ]; then
+  echo "amem launchd: initialize the private memory home first" >&2
+  exit 1
+fi
+if [ -L "$memory_home/.state" ] || [ -L "$log_dir" ]; then
+  echo "amem launchd: refusing symlinked state or log directory" >&2
+  exit 1
+fi
+mkdir -p "$log_dir"
+chmod 700 "$memory_home/.state" "$log_dir"
+
+rotate_log() {
+  log_path=$1
+  if [ -L "$log_path" ] || [ -L "$log_path.1" ]; then
+    echo "amem launchd: refusing symlinked log file" >&2
+    exit 1
+  fi
+  if [ ! -f "$log_path" ]; then
+    return
+  fi
+  log_bytes=$(wc -c < "$log_path" | tr -d ' ')
+  if [ "$log_bytes" -gt "$max_log_bytes" ]; then
+    mv -f "$log_path" "$log_path.1"
+    chmod 600 "$log_path.1"
+  fi
+}
+
+rotate_log "$stdout_log"
+rotate_log "$stderr_log"
+exec "$memory_root/amem" --home "$memory_home" sync --json >>"$stdout_log" 2>>"$stderr_log"

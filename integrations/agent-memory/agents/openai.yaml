@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Memory"
+  short_description: "Search local knowledge with bounded context"
+  default_prompt: "Use $agent-memory to search the local knowledge base and read only the evidence needed."

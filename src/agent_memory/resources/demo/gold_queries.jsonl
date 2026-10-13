@@ -1,0 +1,3 @@
+{"id":"english-retrieval","category":"demo","query":"selective retrieval opaque references","collection":"research","relevant_paths":["retrieval.md"],"k":3,"max_search_units":4000}
+{"id":"korean-retrieval","category":"demo","query":"간격 반복 학습","collection":"research","relevant_paths":["learning.md"],"k":3,"max_search_units":4000}
+{"id":"unrelated-query","category":"demo","query":"quasarzzzz cosmologyzzzz","collection":"research","expect_no_results":true,"k":3,"max_search_units":4000}

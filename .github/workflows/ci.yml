@@ -1,0 +1,41 @@
+name: Verify public memory engine
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ['3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e . build
+          .venv/bin/python -c 'import sqlite3; assert sqlite3.sqlite_version_info >= (3, 42, 0), sqlite3.sqlite_version'
+      - name: Unit tests
+        run: .venv/bin/python -m unittest discover -s tests -t .
+      - name: Source privacy check
+        run: .venv/bin/python scripts/check_public_tree.py
+      - name: CLI and MCP flow
+        run: .venv/bin/python scripts/verify_install.py --command .venv/bin/amem
+      - name: Build and verify wheel
+        run: |
+          .venv/bin/python -m build
+          python -m venv /tmp/amem-wheel-check
+          /tmp/amem-wheel-check/bin/python -m pip install --upgrade pip
+          /tmp/amem-wheel-check/bin/python -m pip install dist/*.whl
+          /tmp/amem-wheel-check/bin/python scripts/verify_install.py --command /tmp/amem-wheel-check/bin/amem

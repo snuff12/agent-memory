@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+self=$0
+while [ -L "$self" ]; do
+  target=$(readlink "$self")
+  case "$target" in
+    /*) self=$target ;;
+    *) self=$(dirname "$self")/$target ;;
+  esac
+done
+root=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd -P)
+
+if [ ! -x "$root/.venv/bin/amem" ]; then
+  echo "amem: private environment is missing; reinstall in $root/.venv" >&2
+  exit 127
+fi
+
+# Do not let the caller's repository or Python environment shadow this tool.
+unset PYTHONPATH PYTHONHOME
+cd "$root"
+exec "$root/.venv/bin/amem" "$@"
