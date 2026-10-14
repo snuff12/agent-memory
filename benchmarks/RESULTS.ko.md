@@ -1,5 +1,8 @@
 # 첫 LongMemEval-S 검색 평가 결과
 
+최신 점수는 [이후 개선 결과](IMPROVEMENTS.ko.md)를 참고하세요.
+이 문서는 비교를 위한 첫 기준 결과를 보존합니다.
+
 [English](RESULTS.md) · [실행 방법과 평가 조건](README.ko.md) ·
 [전체 결과 JSON](results/longmemeval-s.json) ·
 [문항별 결과](results/longmemeval-s-cases.json)

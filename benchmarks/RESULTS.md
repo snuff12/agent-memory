@@ -1,5 +1,8 @@
 # First LongMemEval-S retrieval result
 
+See the [subsequent retrieval improvements](IMPROVEMENTS.md) for current results.
+This page preserves the initial baseline.
+
 [한국어](RESULTS.ko.md) · [Protocol and reproduction](README.md) ·
 [Aggregate JSON](results/longmemeval-s.json) ·
 [Per-question results](results/longmemeval-s-cases.json)

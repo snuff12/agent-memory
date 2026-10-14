@@ -836,7 +836,11 @@ class MemorySystemTests(unittest.TestCase):
                     )
                 )
 
-            with patch("agent_memory.cli.search", return_value=hits):
+            # Keep this a truncation test even when the ordinary renderer fits
+            # more candidate refs by shortening snippets and sharing paths.
+            with patch("agent_memory.cli.search", return_value=hits), patch(
+                "agent_memory.cli.SEARCH_OUTPUT_MAX_UNITS", 512
+            ):
                 report = _evaluate(config, gold)
             self.assertEqual(report["hit_rate_at_k"], 0.0)
             self.assertEqual(report["contamination_rate"], 0.0)

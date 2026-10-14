@@ -41,6 +41,10 @@ removes missing ones only after a complete scan. Incomplete traversal preserves
 unvisited records and fails the freshness gate.
 
 FTS5 word and CJK character searches are combined using reciprocal rank fusion.
+One/two-character substring fallback is restricted to CJK terms. Short Latin
+function words use the word index; they do not add scan-order substring votes.
+Path hints also omit short Latin words. Exact filename navigation
+and trigram/compact candidates remain available.
 Collection and reviewed-memory filters apply before result limits. Fetch checks
 the generation, file hash, current source policy, and memory policy again.
 Deleted or changed sources cannot be read with old references.
@@ -59,6 +63,14 @@ An installed wheel supplies the same `amem` console command without the shell.
 A shared agent skill calls the CLI on demand. The optional stdio MCP exposes
 `memory_catalog`, `memory_search`, and `memory_fetch`. Neither interface preloads
 the corpus into each conversation.
+
+Bounded plain search reserves metadata and short snippets for distinct source
+documents before expanding snippets. It shows a canonical `source-root` once
+and relative paths below it, along with opaque refs, locators, trust, and memory
+warnings. Repeated chunks of one file do not displace another file's first
+pointer. JSON and unbounded search retain the full chunk candidate list; reads
+retain full canonical paths. Existing 4,000-byte CLI and 6,000-byte MCP limits
+remain in force.
 
 ## Lifecycle and freshness
 

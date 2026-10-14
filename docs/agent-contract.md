@@ -30,6 +30,9 @@ does not revalidate an upstream website or renew an expired factual claim.
 The `--max-tokens` unit is a conservative UTF-8 byte budget. Plain CLI search is
 capped at 4,000 units; MCP search is capped at 6,000. Read uses 1,200 by default
 and accepts 128–8,000. Avoid tiny continuations that repeat provenance headers.
+Bounded search shows one candidate per source file and shares canonical path
+prefixes through `source-root` labels. Use the returned opaque ref for reads;
+JSON search retains additional chunks from the same file.
 
 Zero-result feedback is opt-in and applies to the CLI/MCP search boundary only.
 Successes, conversations, internal searches, and evaluations are not recorded.

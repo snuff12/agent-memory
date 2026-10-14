@@ -4,7 +4,7 @@
 
 This benchmark measures whether Agent Memory retrieves the conversation sessions
 that contain the evidence for a question. It needs no model, API key, or GPU.
-The [published results](RESULTS.md) cover the full pinned cleaned
+The [initial results](RESULTS.md) and [retrieval improvements](IMPROVEMENTS.md) cover the full pinned cleaned
 LongMemEval-S dataset. They are **session retrieval scores**, not answer accuracy.
 
 ## Reproduce
@@ -72,13 +72,14 @@ Protocol identifier: `longmemeval-s-session-retrieval-v1`.
 One text source file represents one session entry, in published order. Neutral
 filenames identify positions, rather than embedding questions or answers.
 Agent Memory uses its existing 2,400-character chunk target, 240-character
-overlap, and ordinary document-source configuration. There are no changes to
-the engine's retrieval algorithm for this evaluation.
+overlap, and ordinary document-source configuration. The evaluation adapter
+does not change the engine's retrieval algorithm. Engine revisions are the
+subject of the before/after comparison, with source fingerprints recorded.
 
 | System | What is scored |
 |---|---|
 | `amem_candidates` | The engine's top 20 chunk candidates before CLI output formatting. |
-| `amem_cli_4000_bytes` | Only the candidates visible after the real CLI renderer applies its 4,000 UTF-8 byte limit, including provenance headers and snippets. |
+| `amem_cli_4000_bytes` | Only the candidates visible after the real CLI renderer applies its 4,000 UTF-8 byte limit, including provenance headers and snippets. Improved rendering shares path prefixes, shows one pointer per file, and reserves room for other sources before expanding snippets. |
 | `fts5_bm25` | A word-only SQLite FTS5 BM25 ablation on exactly the same indexed chunks. |
 
 The CLI experiment corresponds to `amem search ... --collection research
@@ -127,7 +128,7 @@ work directories can change score ties or the number of visible snippets.
 Fingerprints and version metadata aid reruns; the report does not promise
 identical timings or bit-for-bit scores on another machine.
 
-Only aggregate results and this harness are distributed here. Downloaded
+Only scores, ranked session IDs, and this harness are distributed here. Downloaded
 conversations, indexes, and the device's operational memory are excluded. The
 upstream dataset is marked MIT; see the authors' dataset and
 [benchmark repository](https://github.com/xiaowu0162/LongMemEval) for attribution.
