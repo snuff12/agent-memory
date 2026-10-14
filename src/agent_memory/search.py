@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import re
 import sqlite3
-from dataclasses import asdict, dataclass
+from bisect import bisect_left, bisect_right
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -23,6 +24,7 @@ from .util import (
 
 QUERY_TERM_RE = re.compile(r"[\w가-힣一-龥ぁ-ゟ゠-ヿ.+/#:@-]+", re.UNICODE)
 CJK_RE = re.compile(r"[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u9fff\uac00-\ud7af]")
+QUOTED_RE = re.compile(r'"([^"\n]+)"|`([^`\n]+)`|“([^”\n]+)”')
 REF_RE = re.compile(
     r"^(?P<doc>[0-9a-f]{16})@(?P<generation>[0-9a-f]{16}\.p\d+c\d+f[0-9a-f]{16})#(?P<ordinal>\d+)$"
 )
@@ -54,18 +56,73 @@ class SearchHit:
     memory_entry_type: str = ""
     memory_kind: str = ""
     memory_error: str = ""
+    memory_valid_from: str = ""
+    memory_review_after: str = ""
+
+
+@dataclass
+class SearchDiagnostics:
+    selected_terms: List[str] = field(default_factory=list)
+    omitted_terms: List[str] = field(default_factory=list)
+    omitted_count: int = 0
+    channels: Dict[str, int] = field(default_factory=dict)
+    channel_errors: List[str] = field(default_factory=list)
+    trigram_available: bool = False
+    candidates: int = 0
+    checked_documents: int = 0
+    unreadable_or_changed_documents: int = 0
+    returned: int = 0
+    policy: Dict[str, object] = field(default_factory=dict)
+    collection: Optional[str] = None
 
 
 class StaleReferenceError(RuntimeError):
     pass
 
 
-def _fts_terms(query: str) -> List[str]:
-    return unique_preserving_order(
+def _explicit_terms(query: str, terms: List[str]) -> List[str]:
+    quoted = {
+        normalize_text(token.group(0)).casefold()[:120]
+        for match in QUOTED_RE.finditer(query)
+        for token in QUERY_TERM_RE.finditer(next(value for value in match.groups() if value is not None))
+    }
+    camel_symbols = {normalize_text(match.group(0)).casefold()[:120]
+                     for match in QUERY_TERM_RE.finditer(query) if re.search(r"[a-z][A-Z]", match.group(0))}
+    return [term for term in terms if term in quoted or term in camel_symbols
+            or any(mark in term for mark in ("/", "_", ":")) or re.search(r"\w\.[a-z0-9]{1,12}$", term)
+            or (any(char.isdigit() for char in term) and any(char.isalpha() for char in term))]
+
+
+def _query_plan(query: str) -> Tuple[List[str], List[str]]:
+    """Keep explicit navigation terms, with bounded context from both ends.
+
+    Quotes prioritize their words; they do not change OR retrieval into a strict
+    phrase filter. No corpus statistics, benchmark labels, or model are used.
+    """
+    terms = unique_preserving_order(
         normalize_text(match.group(0)).casefold()[:120]
         for match in QUERY_TERM_RE.finditer(query)
         if match.group(0).strip()
-    )[:12]
+    )
+    if len(terms) <= 12:
+        return terms, []
+    anchors = _explicit_terms(query, terms)
+
+    def ends(values: List[str], count: int) -> List[str]:
+        if len(values) <= count:
+            return values
+        head = (count + 1) // 2
+        return values[:head] + (values[-(count - head):] if count > head else [])
+
+    selected = ends(anchors, 12)
+    anchor_set = set(anchors)
+    context_terms = [term for term in terms if term not in selected and term not in anchor_set]
+    selected += ends(context_terms, 12 - len(selected))
+    return selected, [term for term in terms if term not in selected]
+
+
+def _fts_terms(query: str) -> List[str]:
+    return _query_plan(query)[0]
 
 
 def _fts_query(terms: Iterable[str], prefix: bool = True) -> str:
@@ -146,8 +203,16 @@ def search(
     collection: Optional[str] = None,
     candidate_multiplier: int = 8,
     policy: Optional[MemoryPolicy] = None,
+    diagnostics: Optional[SearchDiagnostics] = None,
 ) -> List[SearchHit]:
-    terms = _fts_terms(query)
+    terms, omitted = _query_plan(query)
+    trace = diagnostics if diagnostics is not None else SearchDiagnostics()
+    # Reusing an explicit diagnostics object must not retain an earlier query.
+    trace.__dict__.update(SearchDiagnostics().__dict__)
+    trace.selected_terms = terms
+    trace.omitted_terms, trace.omitted_count = omitted[:12], len(omitted)
+    trace.collection = collection
+    trace.policy = asdict(policy or MemoryPolicy())
     if not terms:
         return []
     wanted = max(1, min(int(limit or config.default_results), 20))
@@ -174,15 +239,46 @@ def search(
             ).fetchall()
         except sqlite3.OperationalError:
             rows = []
+            trace.channel_errors.append("word")
+        trace.channels["word"] = len(rows)
         for rank, row in enumerate(rows, 1):
             scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
 
-        if trigram_available(connection):
+        # Keeping an explicit symbol in a long OR query is not sufficient:
+        # boilerplate can still outrank its definition/call site. Retrieve the
+        # named evidence in its own bounded body channel, under the same policy.
+        anchors = _explicit_terms(query, terms)
+        explicit_body_ids: List[str] = []
+        trace.channels["explicit_body"] = 0
+        if anchors:
+            anchor_params: List[object] = [_fts_query(anchors, prefix=False)]
+            if collection:
+                anchor_params.append(collection)
+            anchor_params.append(candidate_limit)
+            try:
+                anchor_rows = connection.execute(
+                    "SELECT chunks_fts.chunk_id, c.text, bm25(chunks_fts) AS relevance "
+                    "FROM chunks_fts JOIN chunks c ON c.id=chunks_fts.chunk_id "
+                    "JOIN eligible_documents d ON d.id=c.document_id "
+                    "WHERE chunks_fts.body MATCH ?" + fts_collection_clause + " ORDER BY relevance LIMIT ?",
+                    tuple(anchor_params),
+                ).fetchall()
+            except sqlite3.OperationalError:
+                anchor_rows = []
+                trace.channel_errors.append("explicit_body")
+            anchor_rows = [row for row in anchor_rows if any(term in normalize_text(row["text"]).casefold() for term in anchors)]
+            explicit_body_ids = [row["chunk_id"] for row in anchor_rows]
+            trace.channels["explicit_body"] = len(anchor_rows)
+            for rank, row in enumerate(anchor_rows, 1):
+                scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
+
+        trace.trigram_available = trigram_available(connection)
+        if trace.trigram_available:
             tri_terms = [term for term in terms if len(term) >= 3]
             if tri_terms:
                 tri_query = _fts_query(tri_terms, prefix=False)
                 compact_query = _fts_query(["".join(normalize_text(query).split())], prefix=False)
-                for current_query, weight in ((tri_query, 0.9), (compact_query, 0.65)):
+                for name, current_query, weight in (("trigram", tri_query, 0.9), ("compact", compact_query, 0.65)):
                     tri_params: List[object] = [current_query]
                     if collection:
                         tri_params.append(collection)
@@ -198,6 +294,8 @@ def search(
                         ).fetchall()
                     except sqlite3.OperationalError:
                         tri_rows = []
+                        trace.channel_errors.append(name)
+                    trace.channels[name] = len(tri_rows)
                     for rank, row in enumerate(tri_rows, 1):
                         scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + weight / (60 + rank)
 
@@ -206,6 +304,7 @@ def search(
         # channel so a large number of repeated code tokens cannot push the
         # named document beyond the generic candidate cutoff.
         filename_terms = [term for term in terms if "." in term]
+        trace.channels["filename"] = 0
         if filename_terms:
             filename_clauses = " OR ".join(
                 "lower(d.relative_path)=? OR lower(d.relative_path) LIKE ? ESCAPE '\\'"
@@ -214,18 +313,25 @@ def search(
             filename_params: List[object] = []
             for term in filename_terms:
                 escaped_term = term.replace("%", "\\%").replace("_", "\\_")
-                filename_params.extend((escaped_term, "%/" + escaped_term))
+                filename_params.extend((term, "%/" + escaped_term))
             filename_collection_clause = " AND d.collection_name=?" if collection else ""
             if collection:
                 filename_params.append(collection)
+            # A named file plus a symbol requests the relevant section of that
+            # file. Prefer body matches before its first two ordinal chunks.
+            filename_order = "d.relative_path, c.ordinal"
+            if explicit_body_ids:
+                filename_order = "CASE WHEN c.id IN (" + ",".join("?" for _ in explicit_body_ids) + ") THEN 0 ELSE 1 END, " + filename_order
+                filename_params.extend(explicit_body_ids)
             filename_params.append(candidate_limit)
             filename_rows = connection.execute(
                 "SELECT c.id AS chunk_id, c.document_id FROM chunks c "
                 "JOIN eligible_documents d ON d.id=c.document_id WHERE (" + filename_clauses + ")"
                 + filename_collection_clause
-                + " ORDER BY d.relative_path, c.ordinal LIMIT ?",
+                + " ORDER BY " + filename_order + " LIMIT ?",
                 tuple(filename_params),
             ).fetchall()
+            trace.channels["filename"] = len(filename_rows)
             filename_per_document: Dict[str, int] = {}
             filename_rank = 0
             for row in filename_rows:
@@ -254,6 +360,7 @@ def search(
             "WHERE (" + clauses + ")" + collection_clause + " ORDER BY d.title, c.ordinal LIMIT ?",
             tuple(params),
         ).fetchall() if like_terms else []
+        trace.channels["path"] = len(path_rows)
         exact_name_rank = 0
         for rank, row in enumerate(path_rows, 1):
             title = normalize_text(row["title"]).casefold()
@@ -272,6 +379,7 @@ def search(
         # Reserve the linear fallback for one/two-character CJK terms. Applying
         # it to Latin function words adds arbitrary scan-order hits to RRF.
         short_terms = [term for term in terms if len(term) < 3 and CJK_RE.search(term)]
+        trace.channels["short_cjk"] = 0
         for term in short_terms[:3]:
             short_params: List[object] = [term]
             if collection:
@@ -282,9 +390,11 @@ def search(
                 "WHERE instr(lower(c.text), ?) > 0" + collection_clause + " LIMIT ?",
                 tuple(short_params),
             ).fetchall()
+            trace.channels["short_cjk"] += len(short_rows)
             for rank, row in enumerate(short_rows, 1):
                 scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 0.55 / (60 + rank)
 
+        trace.candidates = len(scores)
         ranked_rows = []
         for chunk_id, raw_score in scores.items():
             row = connection.execute(
@@ -292,7 +402,8 @@ def search(
                        c.*, d.id AS doc_id, d.collection_name, d.path, d.relative_path,
                        d.real_path, d.title, d.size_bytes, d.mtime_ns, d.source_sha256,
                        d.generation, d.chunker_version, d.status, d.extension,
-                       d.memory_status, d.memory_scope, d.memory_sensitivity, d.memory_entry_type, d.memory_kind, d.memory_error, col.kind, col.trust, col.priority
+                       d.memory_status, d.memory_scope, d.memory_sensitivity, d.memory_entry_type, d.memory_kind, d.memory_error,
+                       d.memory_valid_from, d.memory_review_after, col.kind, col.trust, col.priority
                    FROM chunks c
                    JOIN eligible_documents d ON d.id=c.document_id
                    JOIN collections col ON col.name=d.collection_name
@@ -306,11 +417,14 @@ def search(
 
         hash_cache: Dict[str, str] = {}
         per_document: Dict[str, int] = {}
+        valid_documents: Dict[str, bool] = {}
         hits: List[SearchHit] = []
         for effective_score, _chunk_id, row in ranked_rows:
             if per_document.get(row["doc_id"], 0) >= 2:
                 continue
-            if not _validate_document(row, config, hash_cache):
+            if row["doc_id"] not in valid_documents:
+                valid_documents[row["doc_id"]] = _validate_document(row, config, hash_cache)
+            if not valid_documents[row["doc_id"]]:
                 continue
             per_document[row["doc_id"]] = per_document.get(row["doc_id"], 0) + 1
             generation = row["generation"]
@@ -338,10 +452,14 @@ def search(
                     memory_status=row["memory_status"], memory_scope=row["memory_scope"],
                     memory_sensitivity=row["memory_sensitivity"], memory_entry_type=row["memory_entry_type"],
                     memory_kind=row["memory_kind"], memory_error=row["memory_error"],
+                    memory_valid_from=row["memory_valid_from"], memory_review_after=row["memory_review_after"],
                 )
             )
             if len(hits) >= wanted:
                 break
+        trace.checked_documents = len(valid_documents)
+        trace.unreadable_or_changed_documents = sum(not valid for valid in valid_documents.values())
+        trace.returned = len(hits)
         return hits
     finally:
         connection.close()
@@ -361,6 +479,48 @@ def _location(row: sqlite3.Row) -> str:
     return " · ".join(unique_preserving_order(parts)) or "section"
 
 
+def _focus_span(text: str, terms: List[str], budget: int) -> Optional[Tuple[int, int]]:
+    """Find a byte-bounded literal window in the original, unmodified text.
+
+    Prefer a window containing several query terms; repeated boilerplate gets
+    less weight. Character offsets always refer to the searched chunk, even for
+    multibyte text. This is navigation, not answer extraction or summarization.
+    """
+    if budget <= 0:
+        raise ValueError("Budget is too small for focused source text and provenance")
+    occurrences = []
+    for term in terms:
+        left = r"(?<!\w)" if re.match(r"[a-z0-9_]", term) else ""
+        right = r"(?!\w)" if re.search(r"[a-z0-9_]$", term) else ""
+        matches = [(match.start(), match.end()) for match in re.finditer(left + re.escape(term) + right, text, re.I)]
+        if matches:
+            occurrences.append(([start for start, _ in matches], [end for _, end in matches]))
+    if not occurrences:
+        return None
+    offsets = [0]
+    for char in text:
+        offsets.append(offsets[-1] + len(char.encode("utf-8")))
+    best = None
+    windows = set()
+    for starts, _ends in occurrences:
+        for position in starts:
+            start_byte = max(0, offsets[position] - budget // 3)
+            end_byte = min(offsets[-1], start_byte + budget)
+            start_byte = max(0, end_byte - budget)
+            windows.add((bisect_left(offsets, start_byte), bisect_right(offsets, end_byte) - 1))
+    for start, end in sorted(windows):
+        coverage = [len(starts) for starts, ends in occurrences
+                    if bisect_right(ends, end) > bisect_left(starts, start)]
+        if not coverage:
+            continue
+        score = (sum(1.0 / frequency for frequency in coverage), len(coverage), -start)
+        if best is None or score > best[0]:
+            best = (score, start, end)
+    if best is None:
+        raise ValueError("Budget is too small to include a complete focus term and provenance")
+    return best[1], best[2]
+
+
 def fetch(
     config: AppConfig,
     ref: str,
@@ -369,6 +529,7 @@ def fetch(
     part: int = 1,
     span: Optional[Tuple[int, int]] = None,
     policy: Optional[MemoryPolicy] = None,
+    query: Optional[str] = None,
 ) -> str:
     match = REF_RE.fullmatch(ref.strip())
     if not match:
@@ -376,6 +537,15 @@ def fetch(
     around = max(0, min(int(around), 2))
     part = max(1, int(part))
     budget = max(128, min(int(max_tokens), 8000))
+    focus_terms = None
+    if query is not None:
+        if not isinstance(query, str) or not query.strip() or len(query) > 2000:
+            raise ValueError("Focus query must be a non-empty string of at most 2000 characters")
+        focus_terms = _fts_terms(query)
+        if not focus_terms:
+            raise ValueError("Focus query must contain a literal search term")
+        if span is not None or around != 0 or part != 1:
+            raise ValueError("Focus query requires around=0, part=1, and no explicit character span")
     connection = connect(config, readonly=True)
     try:
         eligible_documents(connection, policy)
@@ -426,21 +596,43 @@ def fetch(
             header += detailed_header
         if row["memory_status"]:
             header += "memory: %s | scope: %s | sensitivity: %s\n" % (row["memory_status"], row["memory_scope"], row["memory_sensitivity"])
+        if row["memory_valid_from"] or row["memory_review_after"]:
+            header += "valid_from: %s | review_after: %s\n" % (row["memory_valid_from"] or "unspecified", row["memory_review_after"] or "unspecified")
         if row["memory_entry_type"] == "invalid":
             header += "MEMORY_METADATA_INVALID: review metadata before using this candidate.\n"
+        focus_note = ""
+        if focus_terms is not None:
+            selected = chunks[0]
+            text = selected["text"]
+            location = _location(selected)
+            prefix_template = "--- %s | chunk chars %d:%d/%d ---\n"
+            footer_template = "\nfocus: literal window; omitted before: %s; omitted after: %s\nRead without query for the full section and --part continuation."
+            # Reserve the longest possible offsets/footer before selecting any
+            # source bytes. The final hard cap includes every provenance byte.
+            reserve = estimate_tokens(header + prefix_template % (location, len(text), len(text), len(text))
+                                      + footer_template % ("yes", "yes"))
+            focused = _focus_span(text, focus_terms, budget - reserve)
+            if focused is not None:
+                start, end = focused
+                output = (header + prefix_template % (location, start, end, len(text)) + text[start:end]
+                          + footer_template % ("yes" if start else "no", "yes" if end < len(text) else "no"))
+                if not _validate_document(row, config, {}):
+                    raise StaleReferenceError("Canonical source changed while reading; search again")
+                return output
+            focus_note = "\nfocus: no literal match; ordinary read follows."
         bodies = []
         for chunk in chunks:
             bodies.append("--- %s | ref %s@%s#%d ---\n%s" % (
                 _location(chunk), row["id"], row["generation"], chunk["ordinal"], chunk["text"]
             ))
         body = "\n\n".join(bodies)
-        payload_budget = max(8, budget - estimate_tokens(header) - 64)
+        payload_budget = max(8, budget - estimate_tokens(header + focus_note) - 64)
         parts = split_by_token_budget(body, payload_budget)
         if part > len(parts):
             raise ValueError("Part %d is out of range; available parts: 1-%d" % (part, len(parts)))
-        footer = ""
+        footer = focus_note
         if len(parts) > 1:
-            footer = "\npart: %d/%d" % (part, len(parts))
+            footer += "\npart: %d/%d" % (part, len(parts))
             if part < len(parts):
                 footer += "\ncontinuation: part %d" % (part + 1)
         fixed_cost = estimate_tokens(header + footer)
@@ -459,11 +651,39 @@ def format_search(
     hits: List[SearchHit],
     as_json: bool = False,
     max_units: Optional[int] = None,
+    diagnostics: Optional[SearchDiagnostics] = None,
 ) -> str:
     if as_json:
-        return json_dumps({"results": [asdict(hit) for hit in hits]}, pretty=True)
+        result = {"results": [asdict(hit) for hit in hits]}
+        if diagnostics is not None:
+            result["explanation"] = asdict(diagnostics)
+        return json_dumps(result, pretty=True)
+    explanation = ""
+    if diagnostics is not None:
+        explanation = _format_diagnostics(diagnostics)
+        if max_units is not None:
+            explanation = truncate_to_token_budget(explanation, max(0, min(1600, max_units // 2)), marker="…")[0]
+            max_units = max(0, max_units - estimate_tokens(explanation + "\n"))
     rendered, _visible_hits = format_search_with_visible_hits(hits, max_units=max_units)
-    return rendered
+    return explanation + "\n" + rendered if explanation else rendered
+
+
+def _format_diagnostics(trace: SearchDiagnostics) -> str:
+    lines = ["SEARCH EXPLANATION (request only; not saved)",
+             "selected terms: " + ", ".join(trace.selected_terms),
+             "omitted terms: %d%s" % (trace.omitted_count, " (" + ", ".join(trace.omitted_terms) + ")" if trace.omitted_terms else ""),
+             "collection: %s | policy: %s" % (trace.collection or "all", json_dumps(trace.policy)),
+             "eligible channel candidates (bounded): " + ", ".join("%s=%d" % item for item in trace.channels.items()),
+             "unique candidates: %d | checked documents: %d | changed/unreadable: %d | returned: %d" % (
+                 trace.candidates, trace.checked_documents, trace.unreadable_or_changed_documents, trace.returned),
+             "Excluded sources are not inspected. Counts do not identify policy-denied matches."]
+    if trace.channel_errors:
+        lines.append("channel errors: " + ", ".join(trace.channel_errors) + "; check index health with doctor.")
+    if not trace.trigram_available:
+        lines.append("Trigram index unavailable; word, path and short CJK channels remain available.")
+    if not trace.returned:
+        lines.append("Next: try literal source terms; check collection/scope/status. Sync a known changed source only.")
+    return "\n".join(lines)
 
 
 def format_search_with_visible_hits(
@@ -498,6 +718,8 @@ def format_search_with_visible_hits(
         ]
         if hit.memory_status:
             metadata.append("memory: %s | scope: %s | sensitivity: %s" % (hit.memory_status, hit.memory_scope, hit.memory_sensitivity))
+        if hit.memory_valid_from or hit.memory_review_after:
+            metadata.append("valid_from: %s | review_after: %s" % (hit.memory_valid_from or "unspecified", hit.memory_review_after or "unspecified"))
         if hit.memory_entry_type == "invalid":
             metadata.append("MEMORY_METADATA_INVALID: review metadata before using this candidate.")
         entry = metadata + ["snippet: %s" % bounded_snippet]
@@ -566,6 +788,10 @@ def _format_bounded_search(hits: List[SearchHit], budget: int) -> Tuple[str, Lis
         if hit.memory_status:
             metadata.append("memory: %s | scope: %s | sensitivity: %s" % (
                 field(hit.memory_status, 120), field(hit.memory_scope, 120), field(hit.memory_sensitivity, 120)
+            ))
+        if hit.memory_valid_from or hit.memory_review_after:
+            metadata.append("valid_from: %s | review_after: %s" % (
+                field(hit.memory_valid_from, 60) or "unspecified", field(hit.memory_review_after, 60) or "unspecified"
             ))
         if hit.memory_entry_type == "invalid":
             metadata.append("MEMORY_METADATA_INVALID: review metadata before using this candidate.")

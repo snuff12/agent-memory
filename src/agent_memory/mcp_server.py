@@ -9,7 +9,7 @@ from . import __version__
 from .config import AppConfig
 from .feedback import record_zero_result
 from .memory_policy import MemoryPolicy
-from .search import StaleReferenceError, catalog, fetch, format_search, search
+from .search import SearchDiagnostics, StaleReferenceError, catalog, fetch, format_search, search
 
 
 CURRENT_PROTOCOL = "2026-07-28"
@@ -43,6 +43,7 @@ TOOLS = [
                 "query": {"type": "string", "minLength": 1, "maxLength": MAX_QUERY_LENGTH},
                 "collection": {"type": "string", "minLength": 1, "maxLength": MAX_COLLECTION_LENGTH},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
+                "explain": {"type": "boolean", "default": False, "description": "Explain term selection and eligible candidate counts without saving feedback."},
             },
             "required": ["query"],
             "additionalProperties": False,
@@ -63,6 +64,8 @@ TOOLS = [
                 "max_tokens": {"type": "integer", "minimum": 128, "maximum": 8000, "default": 1200},
                 "around": {"type": "integer", "minimum": 0, "maximum": 2, "default": 0},
                 "part": {"type": "integer", "minimum": 1, "default": 1},
+                "query": {"type": "string", "minLength": 1, "maxLength": MAX_QUERY_LENGTH,
+                          "description": "Literal focus terms for a source window; requires around=0 and part=1."},
             },
             "required": ["ref"],
             "additionalProperties": False,
@@ -242,7 +245,7 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
         _reject_extra_keys(arguments, set())
         return _response(identifier, _tool_result(catalog(config)))
     if name == "memory_search":
-        _reject_extra_keys(arguments, {"query", "collection", "limit"} | POLICY_KEYS)
+        _reject_extra_keys(arguments, {"query", "collection", "limit", "explain"} | POLICY_KEYS)
         query = _required_string(arguments, "query", maximum=MAX_QUERY_LENGTH)
         collection = _optional_string(
             arguments,
@@ -257,8 +260,14 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
             maximum=20,
         )
         policy = _policy(arguments)
-        hits = search(config, query, limit=limit, collection=collection, **({"policy": policy} if policy != MemoryPolicy() else {}))
-        if not hits and policy == MemoryPolicy():
+        explain = arguments.get("explain", False)
+        if not isinstance(explain, bool):
+            raise _InvalidParamsError("explain must be a boolean")
+        diagnostics = SearchDiagnostics() if explain else None
+        hits = search(config, query, limit=limit, collection=collection,
+                      **({"policy": policy} if policy != MemoryPolicy() else {}),
+                      **({"diagnostics": diagnostics} if explain else {}))
+        if not hits and policy == MemoryPolicy() and not explain:
             try:
                 record_zero_result(
                     config,
@@ -268,19 +277,23 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
                 )
             except (ValueError, OSError, sqlite3.Error, RuntimeError) as exc:
                 _diagnose("zero-result feedback warning", exc)
-        return _response(identifier, _tool_result(format_search(hits, max_units=6000)))
+        return _response(identifier, _tool_result(format_search(hits, max_units=6000, diagnostics=diagnostics)))
     if name == "memory_fetch":
-        _reject_extra_keys(arguments, {"ref", "max_tokens", "around", "part"} | POLICY_KEYS)
+        _reject_extra_keys(arguments, {"ref", "max_tokens", "around", "part", "query"} | POLICY_KEYS)
         ref = _required_string(arguments, "ref", maximum=MAX_REF_LENGTH)
         max_tokens = _integer(arguments, "max_tokens", 1200, minimum=128, maximum=8000)
         around = _integer(arguments, "around", 0, minimum=0, maximum=2)
         part = _integer(arguments, "part", 1, minimum=1)
+        query = _optional_string(arguments, "query", maximum=MAX_QUERY_LENGTH)
+        if query is not None and (around != 0 or part != 1):
+            raise _InvalidParamsError("Focus query requires around=0 and part=1")
         rendered = fetch(
             config,
             ref,
             max_tokens=max_tokens,
             around=around,
             part=part,
+            **({"query": query} if query is not None else {}),
             **({"policy": _policy(arguments)} if _policy(arguments) != MemoryPolicy() else {}),
         )
         return _response(identifier, _tool_result(rendered))

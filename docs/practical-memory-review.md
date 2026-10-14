@@ -51,7 +51,7 @@ All automated probes used temporary, synthetic data. The repository-source
 inspection above was a separate read-only analysis of public project code.
 
 - **Query intent can be discarded.** `_fts_terms` keeps the first 12 distinct
-  terms. A synthetic question with the decisive identifier after that boundary
+  terms in the reviewed version. A synthetic question with the decisive identifier after that boundary
   retrieved a general background document; searching the identifier alone found
   the target. The follow-up should preserve explicit filenames, IDs, and quoted
   terms, rather than merely increasing every query's term count.
@@ -76,13 +76,32 @@ they do not identify causes or establish priorities for real users. The data
 is long conversation history, not representative evidence about every coding,
 research, or project-memory workflow.
 
-## Next work and adoption criteria
+## Applied after this review
+
+Long queries now preserve explicit file names, IDs, symbols, and quoted words
+within the same 12-term ceiling, with remaining context from both ends. A bounded
+body-only channel for explicit terms keeps definitions/call sites ahead of
+unrelated boilerplate, including when the query also names their file. Optional
+`search --explain` reports selection and eligible channel counts without feedback
+writes or excluded-card inspection. `read --query` navigates to a literal source
+window within the existing byte budget and reports chunk offsets and omissions.
+Search/read also expose existing card validity/review dates. This is not an
+as-of or automatic conflict-resolution feature.
+
+[Worked flows](retrieval-workflows.md) and ten new source-use regressions cover
+these changes, scoped follow-up search, and old/current manual review. The real
+public `search.py` review requires both a function definition and its call site
+to be read at 1,200 bytes each; a file-level hit alone does not pass. Models,
+graphs, automatic capture, and promotion were not added. Benchmark datasets or
+scores were not used to select these rules or accept the change.
+
+## Adoption criteria and remaining work
 
 | Order | Candidate | Evidence needed before adoption |
 |---|---|---|
-| First | Preserve decisive query terms and make retrieval failures explainable | Actual long project questions retain their requested file/ID; a wrong or missing result can be traced to query selection, source freshness, or policy without recording conversations. |
-| First | Better navigation from search to useful source spans | Code review and policy tasks expose all required definitions, exceptions, or rollback conditions at a reasonable read/search cost. |
-| Next | Iterative search and explicit time/version interpretation | A task correctly joins project decisions across files and distinguishes an old rule from the current one, with source citations. |
+| Applied; continue real-task checks | Preserve decisive query terms and make retrieval failures explainable | Long project questions retain their file/ID. Selection, source changes, and active policy are visible without recording conversations; excluded-card existence is not diagnosed. |
+| Applied; continue real-task checks | Better navigation from search to useful source spans | Code review and policy tasks expose all required definitions, exceptions, or rollback conditions at a reasonable read/search cost. |
+| Scoped flows checked; event-time reasoning remains open | Iterative search and explicit time/version interpretation | A task correctly joins project decisions across files and distinguishes an old rule from the current one, with source citations. |
 | Conditional | Optional semantic candidates and reranking | Real paraphrased questions improve after source reads, with acceptable local latency, memory use, and scope isolation. Model relevance scores are not confidence. |
 | Conditional | Memory drafting and duplicate/conflict review | Explicitly authorized captures become easier to review without silently deleting history, changing canonical sources, or promoting inbox candidates. |
 

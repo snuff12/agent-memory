@@ -143,7 +143,8 @@ def eligible_documents(connection: sqlite3.Connection, policy: Optional[MemoryPo
         SELECT d.*, COALESCE(m.entry_type,'') AS memory_entry_type,
             COALESCE(m.memory_kind,'') AS memory_kind, COALESCE(m.memory_status,'') AS memory_status,
             COALESCE(m.scope,'') AS memory_scope, COALESCE(m.sensitivity,'') AS memory_sensitivity,
-            COALESCE(m.error,'') AS memory_error
+            COALESCE(m.error,'') AS memory_error,
+            COALESCE(m.valid_from,'') AS memory_valid_from, COALESCE(m.review_after,'') AS memory_review_after
         FROM main.documents d JOIN main.collections col ON col.name=d.collection_name
         LEFT JOIN main.memory_metadata m ON m.document_id=d.id CROSS JOIN memory_request p
         WHERE col.kind!='curated_memory' OR (

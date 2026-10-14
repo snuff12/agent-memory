@@ -37,11 +37,16 @@ def main() -> None:
         run("sync")
         run("status", "--require-fresh")
         for query in ("opaque references", "간격 반복 학습"):
-            hits = json.loads(run("search", query, "--collection", "research", "--json"))["results"]
+            report = json.loads(run("search", query, "--collection", "research", "--explain", "--json"))
+            hits = report["results"]
             assert hits, query
+            assert report["explanation"]["selected_terms"]
             excerpt = run("read", hits[0]["ref"], "--max-tokens", "1200")
             assert query.split()[0] in excerpt
             assert len(excerpt.rstrip("\n").encode("utf-8")) <= 1200
+            focused = run("read", hits[0]["ref"], "--query", query, "--max-tokens", "1200")
+            assert query.split()[0] in focused and "chunk chars" in focused
+            assert len(focused.rstrip("\n").encode("utf-8")) <= 1200
         result = json.loads(run("eval", "--json"))
         assert result["passed_cases"] == 3 and result["negative_cases"] == 1
         run("capture", "--kind", "decision", "--title", "Synthetic inbox marker",
@@ -54,18 +59,21 @@ def main() -> None:
         messages = [
             {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-11-25"}},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
-            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "opaque references", "collection": "research", "limit": 3}}},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "opaque references", "collection": "research", "limit": 3, "explain": True}}},
+            {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "memory_fetch", "arguments": {"ref": hits[0]["ref"], "query": "간격 반복", "max_tokens": 1200}}},
         ]
         mcp = subprocess.run([str(command), "--home", str(home), "mcp"], cwd=root, env=environment,
                              input="".join(json.dumps(item) + "\n" for item in messages), capture_output=True, text=True, timeout=60)
         assert mcp.returncode == 0, mcp.stderr
         responses = [json.loads(line) for line in mcp.stdout.splitlines()]
-        assert len(responses) == 3 and all("result" in item for item in responses), responses
+        assert len(responses) == 4 and all("result" in item for item in responses), responses
         assert {item["name"] for item in responses[1]["result"]["tools"]} == {"memory_catalog", "memory_search", "memory_fetch"}
         assert not responses[2]["result"].get("isError", False), responses[2]
+        assert "SEARCH EXPLANATION" in responses[2]["result"]["content"][0]["text"]
+        assert "chunk chars" in responses[3]["result"]["content"][0]["text"]
         after = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         assert before == after, "Source documents were changed"
-        print("PASS: init, doctor, sync, bilingual search/read, eval, inbox policy, stdio MCP, read-only source files")
+        print("PASS: init, doctor, sync, bilingual search/read/focus, explanations, eval, inbox policy, stdio MCP, read-only source files")
 
 
 if __name__ == "__main__":

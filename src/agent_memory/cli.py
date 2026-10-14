@@ -30,6 +30,7 @@ from .mcp_server import run_server
 from .memory_policy import MemoryPolicy, parse_memory
 from .migration import migrate_projections
 from .search import (
+    SearchDiagnostics,
     StaleReferenceError,
     catalog,
     context,
@@ -77,12 +78,14 @@ def _parser() -> argparse.ArgumentParser:
     search_parser.add_argument("--collection")
     search_parser.add_argument("--limit", type=int)
     search_parser.add_argument("--json", action="store_true")
+    search_parser.add_argument("--explain", action="store_true", help="Show term selection and eligible retrieval counts without saving feedback.")
 
     read_parser = subparsers.add_parser("read", help="Fetch one searched section under a hard budget.")
     read_parser.add_argument("ref")
     read_parser.add_argument("--max-tokens", type=int, default=1200)
     read_parser.add_argument("--around", type=int, default=0)
     read_parser.add_argument("--part", type=int, default=1)
+    read_parser.add_argument("--query", help="Focus a literal source window; requires --around 0 and --part 1.")
 
     context_parser = subparsers.add_parser("context", help="Assemble diverse excerpts under one hard budget.")
     context_parser.add_argument("query")
@@ -731,17 +734,19 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command in {"search", "read", "context"}:
             policy = MemoryPolicy(args.memory_status, args.project, args.domain, args.shareable_only)
         if args.command == "search":
-            hits = search(config, args.query, args.limit, args.collection, policy=policy)
-            if not hits and policy == MemoryPolicy():
+            diagnostics = SearchDiagnostics() if args.explain else None
+            hits = search(config, args.query, args.limit, args.collection, policy=policy, diagnostics=diagnostics)
+            if not hits and policy == MemoryPolicy() and not args.explain:
                 _try_record_zero_result(config, args.query, args.collection, "cli_search")
             print(format_search(
                 hits,
                 args.json,
                 max_units=None if args.json else SEARCH_OUTPUT_MAX_UNITS,
+                diagnostics=diagnostics,
             ))
             return 0
         if args.command == "read":
-            print(fetch(config, args.ref, args.max_tokens, args.around, args.part, policy=policy))
+            print(fetch(config, args.ref, args.max_tokens, args.around, args.part, policy=policy, query=args.query))
             return 0
         if args.command == "context":
             print(context(config, args.query, args.max_tokens, args.collection, policy=policy))
