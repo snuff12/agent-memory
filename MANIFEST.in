@@ -5,5 +5,7 @@ recursive-include docs *.md
 recursive-include integrations *.md *.yaml *.plist run-incremental-sync
 recursive-include scripts *.py
 recursive-include tests *.py
+recursive-include benchmarks *.py *.md
+recursive-include benchmarks/results *.json
 recursive-include src/agent_memory/resources *.json *.jsonl *.md
 global-exclude __pycache__ *.py[cod] .DS_Store

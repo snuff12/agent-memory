@@ -30,7 +30,8 @@ def inspect(root: Path):
         relative = path.relative_to(root)
         count += 1
         parts = relative.parts
-        if parts[0] in PRIVATE_ROOTS | BUILD_ROOTS or relative.as_posix() == "config.json":
+        if (parts[0] in PRIVATE_ROOTS | BUILD_ROOTS or relative.as_posix() == "config.json"
+                or parts[:2] in {("benchmarks", "data"), ("benchmarks", "runs")}):
             failures.append((str(relative), "private runtime data"))
             continue
         if path.is_symlink():

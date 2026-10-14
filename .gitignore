@@ -9,6 +9,8 @@
 /implementation/
 /experiments/
 /eval/
+/benchmarks/data/
+/benchmarks/runs/
 *.sqlite3*
 *.db
 fingerprint.key

@@ -75,7 +75,7 @@ and install:
 - **Publication checks:** exclude operating data from Git and provide a bounded
   public-source check. Automatic zero-result feedback defaults to off.
 - **Contributor setup:** English/Korean documentation, a GitHub Actions workflow,
-  75 unit tests, and an installed-CLI/MCP verification script using temporary data.
+  unit tests, and an installed-CLI/MCP verification script using temporary data.
   Fix the test import that depended on a particular discovery command.
 - **Configurable semantic pilot scope:** select a document collection and relative
   directory prefixes instead of a private installation's fixed research paths.
@@ -180,6 +180,14 @@ and does not upload your corpus. Experimental semantic retrieval uses a separate
 local runtime and model; see [the pilot](docs/semantic-pilot.md).
 
 ## Develop and verify
+
+[LongMemEval-S retrieval benchmarking](benchmarks/README.md) provides a pinned,
+LLM-free evaluation with a word-only BM25 comparison and the actual CLI byte
+budget. Published numbers measure evidence-session retrieval, not answer accuracy.
+The [first full result](benchmarks/RESULTS.md) reports 58.94% all-evidence @10
+for combined retrieval and 82.34% for the word-only comparison on 470 answerable
+questions; the CLI visibility result is 39.36%. These limitations are published
+with the complete conditions and per-question scores.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -t .
