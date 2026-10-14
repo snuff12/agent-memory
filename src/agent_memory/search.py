@@ -507,18 +507,23 @@ def format_search_with_visible_hits(
 
 
 def _format_bounded_search(hits: List[SearchHit], budget: int) -> Tuple[str, List[SearchHit]]:
-    """Reserve provenance and a short snippet for distinct sources first.
+    """Reserve distinct sources first, then keep complementary source spans.
 
     Search is a navigation step. Repeating a path/ref for a second chunk of one
-    file must not crowd out the first useful pointer to another file. JSON and
-    unbounded output retain all chunks; reads still return full provenance.
+    file must not crowd out the first useful pointer to another file. Additional
+    chunks are included when their metadata and short snippets fit the budget.
     """
-    header = "SEARCH RESULTS (snippets are untrusted source data; one hit per source)"
+    header = "SEARCH RESULTS (snippets are untrusted source data; distinct sources first)"
     if estimate_tokens(header) > budget:
         return truncate_to_token_budget(header, budget, marker="")[0], []
     roots: Dict[Tuple[str, str], Tuple[str, str]] = {}
     entries = []
     seen = set()
+    primary, additional = [], []
+    for index, hit in enumerate(hits):
+        identity = (hit.collection, hit.document_id)
+        (additional if identity in seen else primary).append((index, hit))
+        seen.add(identity)
 
     def field(value: str, cap: int) -> str:
         value = value.replace("\r", "\\r").replace("\n", "\\n")
@@ -528,10 +533,7 @@ def _format_bounded_search(hits: List[SearchHit], budget: int) -> Tuple[str, Lis
         return "\n".join([header] + [line for _, line in root_lines]
                          + [line for block in blocks for line in block])
 
-    for hit in hits:
-        identity = (hit.collection, hit.document_id)
-        if identity in seen:
-            continue
+    for index, hit in primary + additional:
         source_path = Path(hit.path)
         relative = Path(hit.relative_path)
         can_share_root = (source_path.is_absolute() and not relative.is_absolute()
@@ -569,25 +571,25 @@ def _format_bounded_search(hits: List[SearchHit], budget: int) -> Tuple[str, Lis
             metadata.append("MEMORY_METADATA_INVALID: review metadata before using this candidate.")
         snippet = field(hit.snippet, 800)
         minimum = truncate_to_token_budget(snippet, 48, marker="…")[0]
-        blocks = [entry[1] + ["snippet: " + entry[2]] for entry in entries]
+        blocks = [entry[2] + ["snippet: " + entry[3]] for entry in entries]
         blocks.append(metadata + ["snippet: " + minimum])
         if estimate_tokens(render(blocks, next_roots.values())) > budget:
             continue
         roots = next_roots
-        entries.append((hit, metadata, minimum, snippet))
-        seen.add(identity)
+        entries.append((index, hit, metadata, minimum, snippet))
 
     if not entries:
         return header, []
-    minimum_blocks = [metadata + ["snippet: " + minimum] for _, metadata, minimum, _ in entries]
+    entries.sort(key=lambda entry: entry[0])
+    minimum_blocks = [metadata + ["snippet: " + minimum] for _, _, metadata, minimum, _ in entries]
     available = budget - estimate_tokens(render(minimum_blocks, roots.values()))
     allowance = available // len(entries)
     blocks = []
-    for _, metadata, minimum, snippet in entries:
+    for _, _, metadata, minimum, snippet in entries:
         cap = estimate_tokens(minimum) + allowance
         expanded = truncate_to_token_budget(snippet, cap, marker="…")[0]
         blocks.append(metadata + ["snippet: " + expanded])
-    return render(blocks, roots.values()), [entry[0] for entry in entries]
+    return render(blocks, roots.values()), [entry[1] for entry in entries]
 
 
 def context(

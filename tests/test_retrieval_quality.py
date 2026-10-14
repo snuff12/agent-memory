@@ -65,7 +65,8 @@ class RetrievalQualityTests(unittest.TestCase):
         hits = [self.candidate(document, ordinal) for document in range(1, 11) for ordinal in range(2)]
         rendered, visible = format_search_with_visible_hits(hits, max_units=4000)
         self.assertLessEqual(len(rendered.encode("utf-8")), 4000)
-        self.assertEqual([hit.document_id for hit in visible], ["doc-%d" % i for i in range(1, 11)])
+        self.assertEqual(list(dict.fromkeys(hit.document_id for hit in visible)),
+                         ["doc-%d" % i for i in range(1, 11)])
         self.assertEqual(rendered.count("/knowledge/references"), 1)
         self.assertIn("untrusted source data", rendered)
         for hit in visible:
@@ -73,6 +74,20 @@ class RetrievalQualityTests(unittest.TestCase):
             self.assertIn(hit.relative_path, rendered)
         self.assertEqual(len(json.loads(format_search(hits, as_json=True))["results"]), 20)
         self.assertEqual(len(format_search_with_visible_hits(hits)[1]), 20)
+
+    def test_bounded_output_retains_complementary_sections_from_one_document(self):
+        first = replace(self.candidate(1, 0), title="Deployment policy", locator="Production rollout",
+                        snippet="Use staged rollout for the production deployment.")
+        second = replace(self.candidate(1, 1), title="Deployment policy", locator="Rollback conditions",
+                         start_line=400, end_line=420,
+                         snippet="Rollback when the error rate exceeds the release limit.")
+        rendered, visible = format_search_with_visible_hits([first, second], max_units=4000)
+        self.assertEqual(visible, [first, second])
+        self.assertIn(first.ref, rendered)
+        self.assertIn(second.ref, rendered)
+        self.assertIn("Use staged rollout", rendered)
+        self.assertIn("Rollback when", rendered)
+        self.assertLessEqual(len(rendered.encode("utf-8")), 4000)
 
     def test_tiny_budgets_remain_bounded_with_and_without_candidates(self):
         for budget in (0, 1, 10, 60, 128):

@@ -13,3 +13,6 @@ and integration instructions. Real user data belongs in a separate memory home.
 - Run `.venv/bin/python -m unittest discover -s tests -t .` after engine changes.
 - Use `scripts/check_public_tree.py` before distributing a source bundle.
 - A source bundle, wheel, or test environment must use synthetic data only.
+- Accept changes for demonstrated usefulness in real tasks. Benchmark scores
+  are diagnostic evidence, not an acceptance target. Preserve useful source
+  spans even when a coarser retrieval metric does not reward them.

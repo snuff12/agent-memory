@@ -141,11 +141,11 @@ Markdown, 텍스트, 코드, HTML, PDF, DOCX, PPTX, XLSX, HWPX를 지원합니�
 [LongMemEval-S 검색 벤치마크](benchmarks/README.ko.md)는 고정된 데이터로 LLM 없이
 실행합니다. 같은 청크의 BM25 단어 검색과 비교하고, 실제 CLI 출력 예산의 영향도
 측정합니다. 공개 점수는 필요한 대화 세션을 찾는 성능이며, 최종 답변 정확도가 아닙니다.
-[개선 후 전체 결과](benchmarks/IMPROVEMENTS.ko.md)에서 근거를 모두 찾은 비율은
-상위 10개 세션 기준 **81.91%**이며, CLI 출력 제한 뒤에도 같은 점수를 유지했습니다.
-BM25 비교군은 82.34%입니다. [첫 결과](benchmarks/RESULTS.ko.md)의 검색 58.94%와
-CLI 출력 뒤 39.36%에서 개선됐습니다. 근거가 있는 470문항의 평가 조건과 문항별
-결과를 두 실행 모두 공개합니다.
+[기록된 검색 실험](benchmarks/IMPROVEMENTS.ko.md)은 당시 엔진의 점수와 조건을
+보존합니다. 이 점수는 정답 구간의 실제 포함 여부나 작업 성공률을 측정하지 않습니다.
+변경은 실제 작업에서 도움이 되는지를 확인해 채택합니다. 벤치마크 점수 상승만으로
+반영하지 않습니다. [실사용 중심 검토](docs/practical-memory-review.ko.md)에 근거와
+다음 검증 대상을 정리했습니다.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -t .

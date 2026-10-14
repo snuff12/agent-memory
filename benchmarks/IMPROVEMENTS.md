@@ -1,5 +1,12 @@
 # Retrieval and bounded-output improvements
 
+These are historical measurements of engine commit `ea53b90`. A subsequent
+practical review found that unconditionally hiding a second chunk of the same
+document lost useful evidence. Current rendering keeps additional chunks when
+space remains. These scores are not a measurement of that later revision. See
+the [practical review](../docs/practical-memory-review.md). Descriptions below
+refer to the measured revision.
+
 [한국어](IMPROVEMENTS.ko.md) · [Reproduce](README.md) · [Initial result](RESULTS.md) ·
 [Updated summary](results/longmemeval-s-improved.json) ·
 [Updated per-question results](results/longmemeval-s-improved-cases.json)

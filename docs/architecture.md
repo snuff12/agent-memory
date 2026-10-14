@@ -68,7 +68,9 @@ Bounded plain search reserves metadata and short snippets for distinct source
 documents before expanding snippets. It shows a canonical `source-root` once
 and relative paths below it, along with opaque refs, locators, trust, and memory
 warnings. Repeated chunks of one file do not displace another file's first
-pointer. JSON and unbounded search retain the full chunk candidate list; reads
+pointer; additional chunks are included when space remains, so complementary
+sections of one document remain discoverable. Selected hits appear in their
+original rank order. JSON and unbounded search retain the full chunk candidate list; reads
 retain full canonical paths. Existing 4,000-byte CLI and 6,000-byte MCP limits
 remain in force.
 

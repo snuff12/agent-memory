@@ -79,7 +79,7 @@ subject of the before/after comparison, with source fingerprints recorded.
 | System | What is scored |
 |---|---|
 | `amem_candidates` | The engine's top 20 chunk candidates before CLI output formatting. |
-| `amem_cli_4000_bytes` | Only the candidates visible after the real CLI renderer applies its 4,000 UTF-8 byte limit, including provenance headers and snippets. Improved rendering shares path prefixes, shows one pointer per file, and reserves room for other sources before expanding snippets. |
+| `amem_cli_4000_bytes` | Only the candidates visible after the real CLI renderer applies its 4,000 UTF-8 byte limit, including provenance headers and snippets. Rendering shares path prefixes and reserves one pointer per file first, then keeps additional chunks when space remains. |
 | `fts5_bm25` | A word-only SQLite FTS5 BM25 ablation on exactly the same indexed chunks. |
 
 The CLI experiment corresponds to `amem search ... --collection research

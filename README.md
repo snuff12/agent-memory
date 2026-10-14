@@ -184,11 +184,11 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 [LongMemEval-S retrieval benchmarking](benchmarks/README.md) provides a pinned,
 LLM-free evaluation with a word-only BM25 comparison and the actual CLI byte
 budget. Published numbers measure evidence-session retrieval, not answer accuracy.
-The [improved full result](benchmarks/IMPROVEMENTS.md) reports **81.91% all-evidence
-@10**, including after the CLI cap, compared with 82.34% for word-only BM25 on
-470 answerable questions. The [initial result](benchmarks/RESULTS.md) was 58.94%
-before formatting and 39.36% after it. Conditions and per-question scores are
-published for both runs.
+The [recorded retrieval experiments](benchmarks/IMPROVEMENTS.md) preserve scores
+and conditions for their tested engine revisions. Those scores do not measure
+answer-span coverage or task completion. Current changes are accepted for
+demonstrated usefulness in real tasks; a higher benchmark score alone is not a
+reason to adopt them. See the [practical review](docs/practical-memory-review.md).
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -t .

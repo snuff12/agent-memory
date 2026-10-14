@@ -1,5 +1,11 @@
 # 검색과 출력 예산 개선 결과
 
+이 수치는 엔진 커밋 `ea53b90`의 과거 측정값입니다. 이후 실사용 검토에서 같은
+문서의 두 번째 구간을 무조건 숨기면 중요한 근거를 놓치는 문제를 발견했습니다.
+현재 출력은 여유가 있을 때 추가 구간도 보여줍니다. 아래 점수는 이 후속 수정의
+측정값이 아닙니다. 자세한 내용은 [실사용 중심 검토](../docs/practical-memory-review.ko.md)를 참고하세요.
+아래 동작 설명은 당시 측정한 구현을 기준으로 합니다.
+
 [English](IMPROVEMENTS.md) · [실행 방법](README.ko.md) · [이전 결과](RESULTS.ko.md) ·
 [개선 후 전체 결과](results/longmemeval-s-improved.json) ·
 [개선 후 문항별 결과](results/longmemeval-s-improved-cases.json)
