@@ -33,6 +33,8 @@ def main() -> None:
 
         run("init", "--demo")
         assert json.loads(run("doctor", "--json"))["ok"]
+        (home / "knowledge/owner.md").write_text("SyntheticOwner maintains BridgeProject.\n")
+        (home / "knowledge/store.md").write_text("BridgeProject persists in SyntheticStore.\n")
         before = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         run("sync")
         run("status", "--require-fresh")
@@ -47,6 +49,12 @@ def main() -> None:
             focused = run("read", hits[0]["ref"], "--query", query, "--max-tokens", "1200")
             assert query.split()[0] in focused and "chunk chars" in focused
             assert len(focused.rstrip("\n").encode("utf-8")) <= 1200
+        owner = json.loads(run("search", "SyntheticOwner", "--collection", "research", "--limit", "1", "--json"))["results"][0]
+        assert "BridgeProject" in run("read", owner["ref"], "--max-tokens", "1200")
+        following = json.loads(run("search", "BridgeProject", "--follow-ref", owner["ref"], "--limit", "1", "--json"))
+        assert following["followup"]["anchor"]["ref"] == owner["ref"]
+        assert following["results"][0]["relative_path"] == "store.md"
+        assert "SyntheticStore" in run("read", following["results"][0]["ref"], "--max-tokens", "1200")
         result = json.loads(run("eval", "--json"))
         assert result["passed_cases"] == 3 and result["negative_cases"] == 1
         run("capture", "--kind", "decision", "--title", "Synthetic inbox marker",
@@ -61,19 +69,22 @@ def main() -> None:
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
             {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "opaque references", "collection": "research", "limit": 3, "explain": True}}},
             {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "memory_fetch", "arguments": {"ref": hits[0]["ref"], "query": "간격 반복", "max_tokens": 1200}}},
+            {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "BridgeProject", "follow_ref": owner["ref"], "limit": 1}}},
         ]
         mcp = subprocess.run([str(command), "--home", str(home), "mcp"], cwd=root, env=environment,
                              input="".join(json.dumps(item) + "\n" for item in messages), capture_output=True, text=True, timeout=60)
         assert mcp.returncode == 0, mcp.stderr
         responses = [json.loads(line) for line in mcp.stdout.splitlines()]
-        assert len(responses) == 4 and all("result" in item for item in responses), responses
+        assert len(responses) == 5 and all("result" in item for item in responses), responses
         assert {item["name"] for item in responses[1]["result"]["tools"]} == {"memory_catalog", "memory_search", "memory_fetch"}
         assert not responses[2]["result"].get("isError", False), responses[2]
         assert "SEARCH EXPLANATION" in responses[2]["result"]["content"][0]["text"]
         assert "chunk chars" in responses[3]["result"]["content"][0]["text"]
+        assert "FOLLOW-UP SEARCH" in responses[4]["result"]["content"][0]["text"]
+        assert following["results"][0]["ref"] in responses[4]["result"]["content"][0]["text"]
         after = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         assert before == after, "Source documents were changed"
-        print("PASS: init, doctor, sync, bilingual search/read/focus, explanations, eval, inbox policy, stdio MCP, read-only source files")
+        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, explanations, eval, inbox policy, stdio MCP, read-only source files")
 
 
 if __name__ == "__main__":

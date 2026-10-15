@@ -55,6 +55,7 @@ or memory concepts were invented here.
 | English and Korean retrieval | Word and CJK trigram candidates are combined with reciprocal rank fusion; Unicode normalization handles common text representation differences. |
 | Bounded context | Search, read, and context outputs have conservative UTF-8 byte budgets that include metadata and provenance. |
 | Evidence navigation | Long questions retain explicit file/identifier terms; optional search explanations show eligible retrieval counts. Focused reads select literal source windows at the same byte budget. See [worked flows](docs/retrieval-workflows.md). |
+| Source-bound follow-ups | `search '<literal name>' --follow-ref '<read ref>'` verifies a bridge in the current source and searches its collection under the same supplied policy. Keep initial evidence separately; no automatic name expansion or reranking. |
 | Memory policy | Review status, project/domain scope, sensitivity, and validity are checked before limiting candidates and again during reads. Capture creates inbox candidates; promotion is manual. |
 | Incremental ingestion | Reconcile configured collections without modifying sources. Support multiple document formats and optional Python AST chunking; extraction versions apply to affected file types. |
 | Freshness and storage | Separate local sync age from upstream fact validity; preserve unvisited records after incomplete scans. Use owner-only state, SQLite/FTS secure deletion, and active-index compaction. |

@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from . import __version__
 from .config import AppConfig
 from .feedback import record_zero_result
+from .followup import bridge_query, followup_search, format_followup
 from .memory_policy import MemoryPolicy
 from .search import SearchDiagnostics, StaleReferenceError, catalog, fetch, format_search, search
 
@@ -44,6 +45,8 @@ TOOLS = [
                 "collection": {"type": "string", "minLength": 1, "maxLength": MAX_COLLECTION_LENGTH},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
                 "explain": {"type": "boolean", "default": False, "description": "Explain term selection and eligible candidate counts without saving feedback."},
+                "follow_ref": {"type": "string", "minLength": 1, "maxLength": MAX_REF_LENGTH,
+                               "description": "Optional ref already read. Query must be a literal name/phrase (at most 120 characters) in this chunk; follow-up stays in its collection and does not replace earlier results."},
             },
             "required": ["query"],
             "additionalProperties": False,
@@ -245,7 +248,7 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
         _reject_extra_keys(arguments, set())
         return _response(identifier, _tool_result(catalog(config)))
     if name == "memory_search":
-        _reject_extra_keys(arguments, {"query", "collection", "limit", "explain"} | POLICY_KEYS)
+        _reject_extra_keys(arguments, {"query", "collection", "limit", "explain", "follow_ref"} | POLICY_KEYS)
         query = _required_string(arguments, "query", maximum=MAX_QUERY_LENGTH)
         collection = _optional_string(
             arguments,
@@ -264,6 +267,15 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
         if not isinstance(explain, bool):
             raise _InvalidParamsError("explain must be a boolean")
         diagnostics = SearchDiagnostics() if explain else None
+        follow_ref = _optional_string(arguments, "follow_ref", maximum=MAX_REF_LENGTH)
+        if follow_ref is not None:
+            try:
+                query = bridge_query(query)
+            except ValueError as exc:
+                raise _InvalidParamsError(str(exc)) from exc
+            result = followup_search(config, query, follow_ref, limit=limit, collection=collection,
+                                     policy=policy, diagnostics=diagnostics)
+            return _response(identifier, _tool_result(format_followup(result, max_units=6000, diagnostics=diagnostics)))
         hits = search(config, query, limit=limit, collection=collection,
                       **({"policy": policy} if policy != MemoryPolicy() else {}),
                       **({"diagnostics": diagnostics} if explain else {}))

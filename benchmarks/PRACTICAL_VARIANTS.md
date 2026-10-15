@@ -125,6 +125,15 @@ queries, a persistent worker and vault policies. Before a graph backend, show
 that reliable entity/link extraction and typed provenance beat ordinary
 follow-ups at realistic corpus size. Do not tune this set to get those results.
 
+After the experiment, the core gained explicit `search '<literal name>'
+--follow-ref '<read ref>'` support, documented in [the workflow](../docs/retrieval-workflows.md).
+The agent chooses a source-grounded name for a named gap; the engine validates
+it, retains scope, and returns a separate result set. It does not use this
+experiment's unconditional name extractor or replace earlier candidates.
+The frozen 19/38 follow-up result above describes that earlier heuristic, not
+a newly measured score for the shipped feature. Separate regression tests cover
+English/Korean bridges, complementary code spans, policy and stale-source checks.
+
 The graph here is automatic surface-form co-occurrence plus Personalized
 PageRank (restart 0.15, 30 iterations). It is **not a direct run of Graphiti or
 HippoRAG 2**, does not extract factual triples and has no temporal reasoning.

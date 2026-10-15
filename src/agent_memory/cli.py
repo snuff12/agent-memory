@@ -26,6 +26,7 @@ from .feedback import (
     write_feedback_export,
 )
 from .indexer import ensure_fresh, stats_to_dict, sync_all, sync_lock, sync_source
+from .followup import followup_search, format_followup
 from .mcp_server import run_server
 from .memory_policy import MemoryPolicy, parse_memory
 from .migration import migrate_projections
@@ -79,6 +80,7 @@ def _parser() -> argparse.ArgumentParser:
     search_parser.add_argument("--limit", type=int)
     search_parser.add_argument("--json", action="store_true")
     search_parser.add_argument("--explain", action="store_true", help="Show term selection and eligible retrieval counts without saving feedback.")
+    search_parser.add_argument("--follow-ref", help="Search a literal name read from this ref, in the same collection, as a separate follow-up.")
 
     read_parser = subparsers.add_parser("read", help="Fetch one searched section under a hard budget.")
     read_parser.add_argument("ref")
@@ -735,6 +737,11 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
             policy = MemoryPolicy(args.memory_status, args.project, args.domain, args.shareable_only)
         if args.command == "search":
             diagnostics = SearchDiagnostics() if args.explain else None
+            if args.follow_ref:
+                result = followup_search(config, args.query, args.follow_ref, args.limit, args.collection,
+                                         policy=policy, diagnostics=diagnostics)
+                print(format_followup(result, args.json, SEARCH_OUTPUT_MAX_UNITS, diagnostics))
+                return 0
             hits = search(config, args.query, args.limit, args.collection, policy=policy, diagnostics=diagnostics)
             if not hits and policy == MemoryPolicy() and not args.explain:
                 _try_record_zero_result(config, args.query, args.collection, "cli_search")
