@@ -55,6 +55,14 @@ def main() -> None:
         assert following["followup"]["anchor"]["ref"] == owner["ref"]
         assert following["results"][0]["relative_path"] == "store.md"
         assert "SyntheticStore" in run("read", following["results"][0]["ref"], "--max-tokens", "1200")
+        located = run("locate", owner["ref"], "BridgeProject", "--max-bytes", "1200")
+        assert "1: SyntheticOwner maintains BridgeProject." in located
+        source_lines = run("read", owner["ref"], "--start-line", "1", "--end-line", "1", "--max-bytes", "1200")
+        assert "1: SyntheticOwner maintains BridgeProject." in source_lines
+        span = run("read", owner["ref"], "--span-start", "0", "--span-end", "14", "--max-bytes", "1200")
+        assert "SyntheticOwner" in span and "chunk chars 0:14" in span
+        for text in (located, source_lines, span):
+            assert len(text.rstrip("\n").encode("utf-8")) <= 1200
         result = json.loads(run("eval", "--json"))
         assert result["passed_cases"] == 3 and result["negative_cases"] == 1
         run("capture", "--kind", "decision", "--title", "Synthetic inbox marker",
@@ -70,21 +78,30 @@ def main() -> None:
             {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "opaque references", "collection": "research", "limit": 3, "explain": True}}},
             {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "memory_fetch", "arguments": {"ref": hits[0]["ref"], "query": "간격 반복", "max_tokens": 1200}}},
             {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "memory_search", "arguments": {"query": "BridgeProject", "follow_ref": owner["ref"], "limit": 1}}},
+            {"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "memory_locate", "arguments": {"ref": owner["ref"], "query": "BridgeProject", "max_bytes": 1200}}},
+            {"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "memory_fetch", "arguments": {"ref": owner["ref"], "start_line": 1, "end_line": 1, "max_bytes": 1200}}},
+            {"jsonrpc": "2.0", "id": 8, "method": "tools/call", "params": {"name": "memory_fetch", "arguments": {"ref": owner["ref"], "span_start": 0, "span_end": 14, "max_bytes": 1200}}},
         ]
         mcp = subprocess.run([str(command), "--home", str(home), "mcp"], cwd=root, env=environment,
                              input="".join(json.dumps(item) + "\n" for item in messages), capture_output=True, text=True, timeout=60)
         assert mcp.returncode == 0, mcp.stderr
         responses = [json.loads(line) for line in mcp.stdout.splitlines()]
-        assert len(responses) == 5 and all("result" in item for item in responses), responses
-        assert {item["name"] for item in responses[1]["result"]["tools"]} == {"memory_catalog", "memory_search", "memory_fetch"}
+        assert len(responses) == 8 and all("result" in item for item in responses), responses
+        assert {item["name"] for item in responses[1]["result"]["tools"]} == {"memory_catalog", "memory_search", "memory_fetch", "memory_locate"}
         assert not responses[2]["result"].get("isError", False), responses[2]
         assert "SEARCH EXPLANATION" in responses[2]["result"]["content"][0]["text"]
         assert "chunk chars" in responses[3]["result"]["content"][0]["text"]
         assert "FOLLOW-UP SEARCH" in responses[4]["result"]["content"][0]["text"]
         assert following["results"][0]["ref"] in responses[4]["result"]["content"][0]["text"]
+        assert "1: SyntheticOwner maintains BridgeProject." in responses[5]["result"]["content"][0]["text"]
+        assert "1: SyntheticOwner maintains BridgeProject." in responses[6]["result"]["content"][0]["text"]
+        assert "chunk chars 0:14" in responses[7]["result"]["content"][0]["text"]
+        for response in responses[5:]:
+            assert not response["result"].get("isError", False), response
+            assert len(response["result"]["content"][0]["text"].encode("utf-8")) <= 1200
         after = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         assert before == after, "Source documents were changed"
-        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, explanations, eval, inbox policy, stdio MCP, read-only source files")
+        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, locate/lines/character spans, explanations, eval, inbox policy, stdio MCP, read-only source files")
 
 
 if __name__ == "__main__":

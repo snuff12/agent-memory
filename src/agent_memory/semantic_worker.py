@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+MAX_BODY_BYTES = 512  # Leave 688 bytes for provenance in a normal 1,200-byte read.
+
 os.umask(0o077)
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
@@ -30,13 +32,17 @@ def windows(tokenizer, record):
         while len(tokenizer.encode(header + body[left:right]).ids) > 512 and stop > start + 1:
             stop -= 1
             right = tokens.offsets[stop - 1][1]
+        while len(body[left:right].encode("utf-8")) > MAX_BODY_BYTES and stop > start + 1:
+            stop -= 1
+            right = tokens.offsets[stop - 1][1]
         count = len(tokenizer.encode(header + body[left:right]).ids)
-        if count > 512:
-            raise ValueError("Embedding input exceeds 512 tokens")
+        if count > 512 or len(body[left:right].encode("utf-8")) > MAX_BODY_BYTES:
+            raise ValueError("Embedding input exceeds its token/source-byte window")
         yield header + body[left:right], left, right, count
         if stop == len(tokens.offsets):
             break
-        start = max(start + 1, stop - 64)
+        overlap = min(64, max(1, (stop - start) // 4))
+        start = max(start + 1, stop - overlap)
 
 
 def main():
@@ -68,6 +74,8 @@ def main():
             for text, left, right, count in windows(tokenizer, record):
                 texts.append(text)
                 spans.append({"ref": record["ref"], "start": left, "end": right, "tokens": count})
+                if len(spans) > 32768:
+                    raise ValueError("Semantic build exceeds 32768 windows; select smaller source directories")
                 coverage.append((left, right))
             covered = {i for left, right in coverage for i in range(left, right)}
             if any(not char.isspace() and i not in covered for i, char in enumerate(record["text"])):
@@ -76,7 +84,8 @@ def main():
             raise ValueError("No nonempty semantic passages")
         vectors = np.array(list(model.embed(texts, batch_size=8)), dtype=np.float32)
         np.savez_compressed(request["vectors"], vectors=vectors)
-        print(json.dumps({"spans": spans, "max_tokens": max(span["tokens"] for span in spans), "runtime_versions": versions}))
+        print(json.dumps({"spans": spans, "max_tokens": max(span["tokens"] for span in spans),
+                          "max_body_bytes": MAX_BODY_BYTES, "runtime_versions": versions}))
     else:
         query = "query: " + request["query"]
         if len(tokenizer.encode(query).ids) > 512:

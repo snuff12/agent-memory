@@ -81,13 +81,26 @@ def _parser() -> argparse.ArgumentParser:
     search_parser.add_argument("--json", action="store_true")
     search_parser.add_argument("--explain", action="store_true", help="Show term selection and eligible retrieval counts without saving feedback.")
     search_parser.add_argument("--follow-ref", help="Search a literal name read from this ref, in the same collection, as a separate follow-up.")
+    search_parser.add_argument("--semantic", action="store_true", help="Explicit local semantic candidates from the built document collection; no automatic fusion.")
+
+    locate_parser = subparsers.add_parser("locate", help="Find literal source lines in one current text/code file; counts as a source read.")
+    locate_parser.add_argument("ref")
+    locate_parser.add_argument("query")
+    locate_parser.add_argument("--limit", type=int, default=5)
+    locate_parser.add_argument("--after-line", type=int, default=0)
+    locate_parser.add_argument("--max-bytes", type=int, default=1200)
 
     read_parser = subparsers.add_parser("read", help="Fetch one searched section under a hard budget.")
     read_parser.add_argument("ref")
-    read_parser.add_argument("--max-tokens", type=int, default=1200)
+    read_parser.add_argument("--max-bytes", "--max-tokens", dest="max_tokens", type=int, default=1200,
+                             help="UTF-8 bytes including provenance, not model tokens (default: 1200).")
     read_parser.add_argument("--around", type=int, default=0)
     read_parser.add_argument("--part", type=int, default=1)
     read_parser.add_argument("--query", help="Focus a literal source window; requires --around 0 and --part 1.")
+    read_parser.add_argument("--start-line", type=int, help="First absolute source line (text/code only).")
+    read_parser.add_argument("--end-line", type=int, help="Last absolute source line, inclusive.")
+    read_parser.add_argument("--span-start", type=int, help="Start character offset within the returned chunk.")
+    read_parser.add_argument("--span-end", type=int, help="End character offset within the returned chunk, exclusive.")
 
     context_parser = subparsers.add_parser("context", help="Assemble diverse excerpts under one hard budget.")
     context_parser.add_argument("query")
@@ -117,7 +130,7 @@ def _parser() -> argparse.ArgumentParser:
     capture_parser.add_argument("--valid-from")
     capture_parser.add_argument("--review-after")
 
-    for scoped in (search_parser, read_parser, context_parser):
+    for scoped in (search_parser, read_parser, locate_parser, context_parser):
         scoped.add_argument("--project")
         scoped.add_argument("--domain")
         scoped.add_argument("--memory-status", choices=("reviewed", "inbox", "all"), default="reviewed")
@@ -733,10 +746,17 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "migrate-projections":
             print(json_dumps(migrate_projections(config, args.previous_pdfium, args.previous_pypdf), pretty=True))
             return 0
-        if args.command in {"search", "read", "context"}:
+        if args.command in {"search", "read", "locate", "context"}:
             policy = MemoryPolicy(args.memory_status, args.project, args.domain, args.shareable_only)
         if args.command == "search":
             diagnostics = SearchDiagnostics() if args.explain else None
+            if args.semantic:
+                if args.follow_ref or args.explain:
+                    raise ValueError("Semantic candidates cannot be combined with follow-ref or lexical explain")
+                from .semantic import search_hits, format_candidates
+                hits = search_hits(config, args.query, args.limit or config.default_results, args.collection, policy)
+                print(format_candidates(hits, args.json, None if args.json else SEARCH_OUTPUT_MAX_UNITS))
+                return 0
             if args.follow_ref:
                 result = followup_search(config, args.query, args.follow_ref, args.limit, args.collection,
                                          policy=policy, diagnostics=diagnostics)
@@ -753,7 +773,17 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
             ))
             return 0
         if args.command == "read":
-            print(fetch(config, args.ref, args.max_tokens, args.around, args.part, policy=policy, query=args.query))
+            for first,last in ((args.start_line,args.end_line),(args.span_start,args.span_end)):
+                if (first is None) != (last is None):
+                    raise ValueError("Supply both ends of the line range or character span")
+            print(fetch(config, args.ref, args.max_tokens, args.around, args.part, policy=policy, query=args.query,
+                        lines=(args.start_line,args.end_line) if args.start_line is not None else None,
+                        span=(args.span_start,args.span_end) if args.span_start is not None else None))
+            return 0
+        if args.command == "locate":
+            from .source_navigation import locate
+            print(locate(config, args.ref, args.query, limit=args.limit, after_line=args.after_line,
+                         max_bytes=args.max_bytes, policy=policy))
             return 0
         if args.command == "context":
             print(context(config, args.query, args.max_tokens, args.collection, policy=policy))

@@ -1,4 +1,4 @@
-"""Explicit research pilot; never a default search channel or MCP tool."""
+"""Explicit local document candidates; never a default channel or memory vault."""
 from __future__ import annotations
 
 import json
@@ -6,11 +6,12 @@ import hashlib
 import os
 import subprocess
 import uuid
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from .config import source_by_name
 from .database import connect
+from .memory_policy import eligible_documents
 from .search import SearchHit, StaleReferenceError, _snippet, _validate_document, fetch, format_search
 from .util import atomic_create_text
 
@@ -39,8 +40,12 @@ def _worker(config, request):
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
     environment.pop("PYTHONHOME", None)
-    result = subprocess.run([str(python), "-I", str(Path(__file__).with_name("semantic_worker.py"))],
-        input=json.dumps(request), text=True, capture_output=True, env=environment)
+    try:
+        result = subprocess.run([str(python), "-I", str(Path(__file__).with_name("semantic_worker.py"))],
+            input=json.dumps(request), text=True, capture_output=True, env=environment,
+            timeout=1800 if request["action"] == "build" else 120)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("Optional semantic inference timed out; reduce the selected scope") from None
     if result.returncode:
         # No query/body is copied into logs or error output.
         raise RuntimeError("Semantic worker failed; check the optional runtime/model and input limits")
@@ -48,7 +53,10 @@ def _worker(config, request):
 
 
 def _check_collection(config, collection):
-    source = source_by_name(config, collection)
+    try:
+        source = source_by_name(config, collection)
+    except KeyError:
+        raise ValueError("Unknown semantic document collection") from None
     if not source.enabled or source.kind not in {"knowledge", "research", "domain_knowledge", "project"}:
         raise ValueError("Semantic pilot requires an enabled document collection, not a memory vault")
 
@@ -66,10 +74,12 @@ def build(config, collection="research", path_prefixes=()):
     model_fingerprint = _model_fingerprint(config)
     connection = connect(config, readonly=True)
     try:
+        eligible_documents(connection)
         rows = connection.execute("""SELECT c.*,d.id AS doc_id,d.collection_name,d.path,d.real_path,d.relative_path,
             d.title,d.generation,d.extension,d.chunker_version,d.source_sha256,d.size_bytes,d.mtime_ns
-            FROM chunks c JOIN documents d ON d.id=c.document_id
-            WHERE d.status='ok' AND d.collection_name=?""" + scope +
+            FROM chunks c JOIN eligible_documents d ON d.id=c.document_id
+            JOIN collections col ON col.name=d.collection_name
+            WHERE d.status='ok' AND col.kind!='curated_memory' AND d.collection_name=?""" + scope +
             " ORDER BY d.id,c.ordinal LIMIT 4097", parameters).fetchall()
         if not rows or len(rows) > 4096:
             raise ValueError("Research pilot must contain 1–4096 chunks; sync its selected directories first")
@@ -99,7 +109,7 @@ def build(config, collection="research", path_prefixes=()):
             connection.close()
         if model_fingerprint != _model_fingerprint(config):
             raise ValueError("Semantic model changed during build")
-        manifest = dict(result, embedding_version=1, model_fingerprint=model_fingerprint, vectors=vectors.name, model="intfloat/multilingual-e5-small", revision=MODEL_REVISION,
+        manifest = dict(result, embedding_version=2, model_fingerprint=model_fingerprint, vectors=vectors.name, model="intfloat/multilingual-e5-small", revision=MODEL_REVISION,
             collection=collection, path_prefixes=list(path_prefixes), chunks=len(records), experimental=True)
         temporary = state / (uuid.uuid4().hex + ".json")
         atomic_create_text(temporary, json.dumps(manifest, ensure_ascii=False), mode=0o600)
@@ -111,40 +121,50 @@ def build(config, collection="research", path_prefixes=()):
         raise
 
 
-def search_semantic(config, query, limit=5):
+def search_semantic(config, query, limit=5, collection=None, policy=None):
     if not query.strip() or len(query) > 2000:
         raise ValueError("Semantic query must contain 1–2000 characters")
     if not 1 <= limit <= 20:
         raise ValueError("Semantic limit must be within 1–20")
     state = config.database.parent / "semantic"
+    if state.is_symlink() or (state/"manifest.json").is_symlink():
+        raise ValueError("Semantic state must not be a symlink")
+    if not (state/"manifest.json").is_file():
+        raise ValueError("Optional semantic index missing; run semantic build --experimental first")
     manifest = json.loads((state / "manifest.json").read_text())
     if manifest.get("revision") != MODEL_REVISION or not isinstance(manifest.get("collection"), str) or manifest.get("experimental") is not True:
         raise ValueError("Semantic manifest identity changed; rebuild")
-    if manifest.get("embedding_version") != 1 or manifest.get("model_fingerprint") != _model_fingerprint(config):
+    if collection is not None and collection != manifest["collection"]:
+        raise ValueError("Semantic collection does not match the built index; select its collection or rebuild")
+    if manifest.get("embedding_version") not in {1,2} or manifest.get("model_fingerprint") != _model_fingerprint(config):
         raise ValueError("Semantic embedding policy/model changed; rebuild")
     _check_collection(config, manifest["collection"])
     vectors = state / manifest["vectors"]
     if vectors.parent != state or vectors.suffix != ".npz" or vectors.is_symlink():
         raise ValueError("Invalid semantic vector path")
     ranked = _worker(config, {"action": "search", "query": query, "vectors": str(vectors), "runtime_versions": manifest["runtime_versions"]})
+    if manifest["model_fingerprint"] != _model_fingerprint(config):
+        raise ValueError("Semantic model changed during search; rebuild")
     connection = connect(config, readonly=True)
-    output, seen, cache = [], set(), {}
+    output, seen, cache, per_document = [], set(), {}, {}
     try:
+        eligible_documents(connection, policy)
         for index, score in ranked:
             span = manifest["spans"][index]
             document_id, rest = span["ref"].split("@")
             generation, ordinal = rest.split("#")
-            if document_id in seen:
+            if span["ref"] in seen or per_document.get(document_id,0) >= 2:
                 continue
             row = connection.execute("""SELECT c.*,d.id AS doc_id,d.collection_name,d.path,d.real_path,d.relative_path,
                 d.title,d.generation,d.extension,d.chunker_version,d.source_sha256,d.size_bytes,d.mtime_ns,col.kind,col.trust
-                FROM chunks c JOIN documents d ON d.id=c.document_id JOIN collections col ON col.name=d.collection_name
-                WHERE d.id=? AND c.ordinal=? AND d.status='ok' AND d.collection_name=?""", (document_id, int(ordinal), manifest["collection"])).fetchone()
+                FROM chunks c JOIN eligible_documents d ON d.id=c.document_id JOIN collections col ON col.name=d.collection_name
+                WHERE d.id=? AND c.ordinal=? AND d.status='ok' AND col.kind!='curated_memory' AND d.collection_name=?""", (document_id, int(ordinal), manifest["collection"])).fetchone()
             if not row or row["generation"] != generation or not _validate_document(row, config, cache):
                 continue
             if not 0 <= span["start"] < span["end"] <= len(row["text"]):
                 continue
-            seen.add(document_id)
+            seen.add(span["ref"])
+            per_document[document_id]=per_document.get(document_id,0)+1
             hit = SearchHit(len(output) + 1, span["ref"], document_id, generation, row["collection_name"], row["kind"],
                 row["trust"], row["title"], row["path"], row["relative_path"], row["heading"], row["locator"],
                 row["start_line"], row["end_line"], row["page"], row["token_estimate"],
@@ -155,3 +175,21 @@ def search_semantic(config, query, limit=5):
     finally:
         connection.close()
     return output
+
+
+def search_hits(config, query, limit=5, collection=None, policy=None):
+    if not collection:
+        raise ValueError("Semantic search requires an explicit collection matching the built document index")
+    _check_collection(config, collection)
+    return [replace(SearchHit(**result["hit"]),span_start=result["span_start"],span_end=result["span_end"])
+            for result in search_semantic(config,query,limit,collection,policy)]
+
+
+def format_candidates(hits, as_json=False, max_units=None):
+    if as_json:
+        return json.dumps(dict(warning=WARNING,results=[asdict(hit) for hit in hits]),ensure_ascii=False,indent=2)
+    from .util import estimate_tokens, truncate_to_token_budget
+    notice=WARNING+"\n"
+    if max_units is not None and estimate_tokens(notice)>max_units:
+        return truncate_to_token_budget(notice,max(0,max_units),marker="")[0]
+    return notice+format_search(hits,max_units=None if max_units is None else max_units-estimate_tokens(notice))

@@ -58,6 +58,8 @@ class SearchHit:
     memory_error: str = ""
     memory_valid_from: str = ""
     memory_review_after: str = ""
+    span_start: Optional[int] = None
+    span_end: Optional[int] = None
 
 
 @dataclass
@@ -530,6 +532,7 @@ def fetch(
     span: Optional[Tuple[int, int]] = None,
     policy: Optional[MemoryPolicy] = None,
     query: Optional[str] = None,
+    lines: Optional[Tuple[int, int]] = None,
 ) -> str:
     match = REF_RE.fullmatch(ref.strip())
     if not match:
@@ -537,6 +540,13 @@ def fetch(
     around = max(0, min(int(around), 2))
     part = max(1, int(part))
     budget = max(128, min(int(max_tokens), 8000))
+    if lines is not None:
+        if span is not None or query is not None or around != 0 or part != 1:
+            raise ValueError("Source lines require around=0, part=1, no query and no character span")
+        if not isinstance(lines, (tuple, list)) or len(lines) != 2:
+            raise ValueError("Source lines require start_line and end_line")
+        from .source_navigation import read_lines
+        return read_lines(config, ref, *lines, max_bytes=budget, policy=policy)
     focus_terms = None
     if query is not None:
         if not isinstance(query, str) or not query.strip() or len(query) > 2000:
@@ -622,9 +632,14 @@ def fetch(
             focus_note = "\nfocus: no literal match; ordinary read follows."
         bodies = []
         for chunk in chunks:
-            bodies.append("--- %s | ref %s@%s#%d ---\n%s" % (
-                _location(chunk), row["id"], row["generation"], chunk["ordinal"], chunk["text"]
-            ))
+            if span is not None:
+                # The same ref is already in the header. Keep span provenance
+                # without spending the source window on a duplicated ref.
+                bodies.append("--- %s ---\n%s" % (_location(chunk),chunk["text"]))
+            else:
+                bodies.append("--- %s | ref %s@%s#%d ---\n%s" % (
+                    _location(chunk), row["id"], row["generation"], chunk["ordinal"], chunk["text"]
+                ))
         body = "\n\n".join(bodies)
         payload_budget = max(8, budget - estimate_tokens(header + focus_note) - 64)
         parts = split_by_token_budget(body, payload_budget)
@@ -707,6 +722,8 @@ def format_search_with_visible_hits(
             location = (location + " · page %d" % hit.page).strip(" ·")
         elif hit.start_line is not None:
             location = (location + " · lines %s-%s" % (hit.start_line, hit.end_line)).strip(" ·")
+        if hit.span_start is not None:
+            location += " | chunk chars %d:%d" % (hit.span_start, hit.span_end)
         source_path, _ = truncate_to_token_budget(hit.path, 1200, marker="…")
         collection_name, _ = truncate_to_token_budget(hit.collection, 120, marker="…")
         trust_label, _ = truncate_to_token_budget(hit.trust, 120, marker="…")
@@ -775,6 +792,8 @@ def _format_bounded_search(hits: List[SearchHit], budget: int) -> Tuple[str, Lis
         else:
             path_label = field(hit.path, 1200)
         location = field(_location(asdict(hit)), 120)
+        if hit.span_start is not None:
+            location += " | chunk chars %d:%d" % (hit.span_start, hit.span_end)
         title = field(hit.title, 120)
         title_label = " | " + title if hit.title not in {
             relative.name, relative.stem, hit.relative_path

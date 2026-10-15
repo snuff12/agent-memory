@@ -55,12 +55,14 @@ or memory concepts were invented here.
 | English and Korean retrieval | Word and CJK trigram candidates are combined with reciprocal rank fusion; Unicode normalization handles common text representation differences. |
 | Bounded context | Search, read, and context outputs have conservative UTF-8 byte budgets that include metadata and provenance. |
 | Evidence navigation | Long questions retain explicit file/identifier terms; optional search explanations show eligible retrieval counts. Focused reads select literal source windows at the same byte budget. See [worked flows](docs/retrieval-workflows.md). |
+| Code/source navigation | Locate literal definitions/callers anywhere in an already searched text/code file, then read absolute source lines across chunk boundaries. Ref, source hash, scope, and byte-budget checks apply. |
+| Optional semantic candidates | Explicit `search --semantic` / MCP `semantic=true` uses a separately built local document index. Small source windows and exact offsets support bounded reads; up to two chunks per file expose complementary evidence. |
 | Source-bound follow-ups | `search '<literal name>' --follow-ref '<read ref>'` verifies a bridge in the current source and searches its collection under the same supplied policy. Keep initial evidence separately; no automatic name expansion or reranking. |
 | Memory policy | Review status, project/domain scope, sensitivity, and validity are checked before limiting candidates and again during reads. Capture creates inbox candidates; promotion is manual. |
 | Incremental ingestion | Reconcile configured collections without modifying sources. Support multiple document formats and optional Python AST chunking; extraction versions apply to affected file types. |
 | Freshness and storage | Separate local sync age from upstream fact validity; preserve unvisited records after incomplete scans. Use owner-only state, SQLite/FTS secure deletion, and active-index compaction. |
 | Retrieval feedback | Opt-in zero-result records and explicit relevance misses use deduplication, bounded retention, and best-effort secret redaction. Evaluation exports remain disabled candidates. |
-| Shared interfaces | One CLI and agent skill support multiple clients. The optional stdio MCP exposes catalog, search, and fetch. Semantic retrieval remains a separate experimental channel. |
+| Shared interfaces | One CLI and agent skill support multiple clients. The optional stdio MCP exposes catalog, search, fetch, and locate. Semantic candidates require explicit opt-in. |
 
 ### Added for this public release
 
@@ -186,8 +188,10 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 The [actual external-system comparison](benchmarks/SYSTEM_COMPARISON.md) runs
 qmd, HippoRAG 2, Graphiti, Mem0 OSS, Letta Code and the SCIP Python indexer on
 synthetic/public sources using ChatGPT-plan Codex. It separates single-query
-retrieval, a shared controller and native tools. Results favor better source
-navigation and further optional semantic checks; no production default changes.
+retrieval, a shared controller and native tools. Results favored better source
+navigation and optional semantic checks. [Version 0.3 implements both](docs/navigation-and-semantic.md);
+default word search remains unchanged. The comparison scores remain tied to
+the earlier tested revision.
 These are comparison references, not additional upstream code bases.
 
 The [local semantic/graph diagnostic](benchmarks/PRACTICAL_VARIANTS.md) compares

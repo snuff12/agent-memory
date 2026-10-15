@@ -51,7 +51,7 @@ before `mcp` if it differs from the default:
 }
 ```
 
-Available tools are `memory_catalog`, `memory_search`, and `memory_fetch`.
+Available tools are `memory_catalog`, `memory_search`, `memory_fetch`, and `memory_locate`.
 Use MCP when the host needs structured calls; the CLI skill is sufficient for
 agents with shell access.
 
@@ -67,3 +67,8 @@ it in `~/Library/LaunchAgents`. If needed, add `AMEM_HOME` in its
 `EnvironmentVariables` dictionary. Validate with `plutil -lint`, then register
 the job using `launchctl`. The template schedules sync at 00:00, 06:00, 12:00,
 and 18:00, and at load. Installing it is optional and separate from core setup.
+
+Source navigation and optional semantic candidates are documented in
+[the agent contract](../docs/agent-contract.md). `memory_locate` counts toward the
+same source-read budget as `memory_fetch`; enabling MCP does not enable semantic
+retrieval by default.

@@ -511,7 +511,7 @@ class MemorySystemTests(unittest.TestCase):
             self.assertTrue(search(config, "행동심리학 학습 지속성", collection="test"))
             self.assertTrue(search(config, "UX 실험 2027", collection="test"))
 
-    def test_mcp_supports_current_discovery_legacy_initialize_and_three_tools(self) -> None:
+    def test_mcp_supports_current_discovery_legacy_initialize_and_read_tools(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = root / "source"
@@ -528,7 +528,7 @@ class MemorySystemTests(unittest.TestCase):
                 {"jsonrpc": "2.0", "id": 2, "method": "initialize", "params": {"protocolVersion": "2025-11-25"}},
             )
             self.assertEqual(initialized["result"]["protocolVersion"], "2025-11-25")  # type: ignore[index]
-            self.assertEqual([item["name"] for item in TOOLS], ["memory_catalog", "memory_search", "memory_fetch"])
+            self.assertEqual([item["name"] for item in TOOLS], ["memory_catalog", "memory_search", "memory_fetch", "memory_locate"])
             result = handle_request(
                 config,
                 {
