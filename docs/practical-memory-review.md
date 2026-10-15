@@ -2,6 +2,9 @@
 
 [한국어](practical-memory-review.ko.md)
 
+Update 2026-10-15: [actual native-system runs and adoption decisions](../benchmarks/SYSTEM_COMPARISON.md)
+are recorded separately. The review below preserves the earlier findings.
+
 Review date: 2026-10-14. Adoption is based on demonstrated usefulness in actual
 tasks. Benchmark results are diagnostic evidence, not an optimization target.
 The systems below were reviewed through their official documentation and code;

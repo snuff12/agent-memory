@@ -2,6 +2,9 @@
 
 [한국어](README.ko.md)
 
+For the separate native-system adoption diagnostic, see the
+[qmd/HippoRAG/Graphiti/Mem0/Letta/SCIP comparison](SYSTEM_COMPARISON.md).
+
 This benchmark measures whether Agent Memory retrieves the conversation sessions
 that contain the evidence for a question. It needs no model, API key, or GPU.
 The [initial results](RESULTS.md) and [retrieval improvements](IMPROVEMENTS.md) cover the full pinned cleaned

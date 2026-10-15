@@ -140,6 +140,12 @@ Markdown, 텍스트, 코드, HTML, PDF, DOCX, PPTX, XLSX, HWPX를 지원합니�
 
 ## 검증
 
+[외부 메모리 시스템 실제 비교](benchmarks/SYSTEM_COMPARISON.ko.md)에서는 qmd,
+HippoRAG 2, Graphiti, Mem0 OSS, Letta Code와 SCIP Python을 합성 자료·공개 코드로
+실행했습니다. LLM은 구독 Codex를 사용했습니다. 단일 검색, 같은 컨트롤러, 실제 도구
+실행을 구분했으며 원문 탐색 개선과 선택형 의미검색을 우선 검토합니다.
+비교 대상은 추가 기반 프로젝트가 아니며, 이 실험으로 운영 기본값을 바꾸지 않았습니다.
+
 [의미검색·그래프 로컬 진단](benchmarks/PRACTICAL_VARIANTS.ko.md)에서는 고정된 작업형
 질문으로 원문 읽기, 후속 검색, 시간·메모리를 비교했습니다. 일부 이점과 손실을
 함께 확인했으며, 기본 검색은 유지했습니다.

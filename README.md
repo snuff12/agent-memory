@@ -183,6 +183,13 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 
 ## Develop and verify
 
+The [actual external-system comparison](benchmarks/SYSTEM_COMPARISON.md) runs
+qmd, HippoRAG 2, Graphiti, Mem0 OSS, Letta Code and the SCIP Python indexer on
+synthetic/public sources using ChatGPT-plan Codex. It separates single-query
+retrieval, a shared controller and native tools. Results favor better source
+navigation and further optional semantic checks; no production default changes.
+These are comparison references, not additional upstream code bases.
+
 The [local semantic/graph diagnostic](benchmarks/PRACTICAL_VARIANTS.md) compares
 source reads, a follow-up baseline, latency and memory on fixed diagnostic cases.
 It found some useful recoveries and regressions; default search remains unchanged.

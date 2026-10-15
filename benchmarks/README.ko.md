@@ -2,6 +2,9 @@
 
 [English](README.md)
 
+별도 실사용 진단은 [qmd·HippoRAG·Graphiti·Mem0·Letta·SCIP 실제 비교](SYSTEM_COMPARISON.ko.md)를
+확인하세요. 아래 LongMemEval 점수와는 다른 실험입니다.
+
 질문에 답하는 데 필요한 **대화 세션을 찾는 능력**을 측정합니다.
 LLM·API 키·GPU 없이 실행합니다. [최신 개선 결과](IMPROVEMENTS.ko.md)와
 [첫 평가 결과](RESULTS.ko.md)는
