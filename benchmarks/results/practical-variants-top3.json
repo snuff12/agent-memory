@@ -1,0 +1,5560 @@
+{
+  "protocol": "practical-retrieval-variants-v1",
+  "frozen": {
+    "protocol": "practical-retrieval-variants-v1",
+    "source_revision": "6b31fdd1844a91880024e5c047f6f09c77fc0f88",
+    "code_hashes": {
+      "benchmarks/practical_variants.py": "798090f373180ff4945dacf0f8bbff2331c66f14209871ca5f5f58e3df02cd44",
+      "benchmarks/practical_variants_fixture.py": "775cf2b60f694571a5e699fa6946474442f2c6f743628a115ab985a6422c3fba",
+      "benchmarks/PRACTICAL_VARIANTS_PROTOCOL.md": "c24fba9091c8ebe2daad21b4e55e7d084231a7e427f7f3c46f0c1b7a6ed72791",
+      "src/agent_memory/search.py": "bd0770dd9352d752ee25749313fe5c199d23519021375fd0736d8c86e061382d",
+      "src/agent_memory/semantic.py": "cf647a72bfd83efc1d84e17773d013f66c53e3df5daed34365275b6cc9f74818",
+      "src/agent_memory/semantic_worker.py": "4f1a2bf80044edcbb64ba7b71734c54875301e365ec696bc1f30f644df4d4e4f"
+    },
+    "corpus_hash": "e7d1d967846213bc1544222b9a227a4e1b99f3bbdaf1c2870fdffa9725981db3",
+    "cases_hash": "8cdc3425630d940ca1de61b3b414e2ef11cf5604d5aca8c54af710fc045e9db0",
+    "documents": 89,
+    "display_limit": 3
+  },
+  "model": {
+    "name": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "fingerprint": "7b8358f2272208862e38eb8f5ca4f4a3bd7c1cdaa69ae00c012a6cb01ed20651",
+    "runtime_versions": {
+      "fastembed": "0.9.0",
+      "tokenizers": "0.23.3",
+      "onnxruntime": "1.31.0",
+      "numpy": "2.5.4"
+    },
+    "onnx_sha256_verified_against_pinned_huggingface_lfs": "ca456c06b3a9505ddfd9131408916dd79290368331e7d76bb621f1cba6bc8665",
+    "verified_files": {
+      "onnx/model.onnx": {
+        "scheme": "sha256",
+        "expected": "ca456c06b3a9505ddfd9131408916dd79290368331e7d76bb621f1cba6bc8665",
+        "actual": "ca456c06b3a9505ddfd9131408916dd79290368331e7d76bb621f1cba6bc8665",
+        "match": true
+      },
+      "tokenizer.json": {
+        "scheme": "sha256",
+        "expected": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+        "actual": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+        "match": true
+      },
+      "tokenizer_config.json": {
+        "scheme": "git_blob_sha1",
+        "expected": "059214673d9d6d2ee319411e2ffec8c024b816d5",
+        "actual": "059214673d9d6d2ee319411e2ffec8c024b816d5",
+        "match": true
+      },
+      "config.json": {
+        "scheme": "git_blob_sha1",
+        "expected": "60a2a84020f1d74cc53ea9e8c4e91cf4af6c2b68",
+        "actual": "60a2a84020f1d74cc53ea9e8c4e91cf4af6c2b68",
+        "match": true
+      },
+      "special_tokens_map.json": {
+        "scheme": "git_blob_sha1",
+        "expected": "e0b1d18ecd0ae4ff1d47bd297d910c0cf83e504b",
+        "actual": "e0b1d18ecd0ae4ff1d47bd297d910c0cf83e504b",
+        "match": true
+      }
+    },
+    "checksum_metadata_url": "https://huggingface.co/api/models/intfloat/multilingual-e5-small/revision/614241f622f53c4eeff9890bdc4f31cfecc418b3?blobs=true"
+  },
+  "environment": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.9.6",
+    "cpu_count": 8,
+    "semantic_worker_python": "3.14.6"
+  },
+  "costs": {
+    "graph_build_ms": 26.007999999999974,
+    "graph_state_bytes": 18570,
+    "semantic_build_ms": 12439.470584,
+    "semantic_state_bytes": 196713
+  },
+  "sampled_process_tree_peak_rss_bytes": {
+    "semantic_build": 1218691072,
+    "semantic": 1457684480,
+    "lexical": 31899648,
+    "lexical_followup": 31375360,
+    "hybrid": 31277056,
+    "graph": 31522816,
+    "hybrid_graph": 31752192,
+    "guard_checks": 1451180032
+  },
+  "guard_checks": {
+    "graph_rechecks_scope_before_traversal": true,
+    "graph_shareable_filter": true,
+    "semantic_rejects_curated_memory": true,
+    "stale_source_rejected": true,
+    "graph_and_semantic_collection_isolation": true,
+    "curated_semantic_policies_supported": false
+  },
+  "summary": {
+    "lexical": {
+      "answerable": 38,
+      "complete": 14,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 9
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 11
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 20
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 1,
+          "source_reads": 23
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 1,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 0,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 14.053,
+      "p95_ms": 22.08,
+      "mean_read_bytes": 1860.4761904761904,
+      "mean_source_reads": 2.5
+    },
+    "lexical_followup": {
+      "answerable": 38,
+      "complete": 19,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 9
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 11
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 22
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 0,
+          "source_reads": 25
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 0,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 7,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 17.1085,
+      "p95_ms": 28.508,
+      "mean_read_bytes": 1963.595238095238,
+      "mean_source_reads": 2.5952380952380953
+    },
+    "semantic": {
+      "answerable": 38,
+      "complete": 16,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 12
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 24
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 2,
+          "source_reads": 36
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 0,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 2,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 2006.327,
+      "p95_ms": 2521.707,
+      "mean_read_bytes": 1930.3333333333333,
+      "mean_source_reads": 3
+    },
+    "hybrid": {
+      "answerable": 38,
+      "complete": 15,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 12
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 24
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 2,
+          "source_reads": 36
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 0,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 1,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 2015.731,
+      "p95_ms": 2535.077,
+      "mean_read_bytes": 2039.8809523809523,
+      "mean_source_reads": 3
+    },
+    "graph": {
+      "answerable": 38,
+      "complete": 17,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 9
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 11
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 22
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 1,
+          "source_reads": 26
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 0,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 1,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 3,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 39.075,
+      "p95_ms": 49.673,
+      "mean_read_bytes": 1995.4285714285713,
+      "mean_source_reads": 2.619047619047619
+    },
+    "hybrid_graph": {
+      "answerable": 38,
+      "complete": 15,
+      "groups": {
+        "absent": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "ambiguous": {
+          "cases": 4,
+          "complete": 4,
+          "source_reads": 12
+        },
+        "literal": {
+          "cases": 8,
+          "complete": 8,
+          "source_reads": 24
+        },
+        "paraphrase": {
+          "cases": 12,
+          "complete": 2,
+          "source_reads": 36
+        },
+        "public_code": {
+          "cases": 2,
+          "complete": 0,
+          "source_reads": 6
+        },
+        "three_hop": {
+          "cases": 4,
+          "complete": 0,
+          "source_reads": 12
+        },
+        "two_hop": {
+          "cases": 8,
+          "complete": 1,
+          "source_reads": 24
+        }
+      },
+      "median_ms": 2041.0435,
+      "p95_ms": 2558.833,
+      "mean_read_bytes": 2128.9285714285716,
+      "mean_source_reads": 3
+    }
+  },
+  "records": [
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 16.112,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 547,
+      "source_reads": 1,
+      "read_bytes": 1159,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 28.508,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1411,
+      "source_reads": 3,
+      "read_bytes": 3558,
+      "followup_query": "memory_status memory_scope memory_sensitivity"
+    },
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 2521.707,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 2535.077,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1001,
+      "source_reads": 3,
+      "read_bytes": 2279,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 61.341,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "config/decision_log.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1198,
+      "source_reads": 3,
+      "read_bytes": 2939,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-00",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 2558.833,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1027,
+      "source_reads": 3,
+      "read_bytes": 2335,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 12.785,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "background/record-08.txt",
+        "background/record-09.txt",
+        "background/record-07.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1115,
+      "source_reads": 3,
+      "read_bytes": 2001,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 20.23,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "background/record-08.txt",
+        "code/cache_policy.py",
+        "background/record-09.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2160,
+      "source_reads": 3,
+      "read_bytes": 2005,
+      "followup_query": "working inspect this"
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1859.906,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-09.txt",
+        "notes/note-03.txt",
+        "notes/note-01.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 993,
+      "source_reads": 3,
+      "read_bytes": 1798,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1866.52,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "background/record-08.txt",
+        "notes/note-09.txt",
+        "background/record-09.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1094,
+      "source_reads": 3,
+      "read_bytes": 1953,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 45.273,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "background/record-08.txt",
+        "runbooks/INC-7842.md",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1123,
+      "source_reads": 3,
+      "read_bytes": 2511,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-01",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1889.863,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-09.txt",
+        "background/record-08.txt",
+        "runbooks/INC-7842.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1033,
+      "source_reads": 3,
+      "read_bytes": 1957,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 5.681,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-11.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 491,
+      "source_reads": 1,
+      "read_bytes": 691,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 5.751,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-11.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 491,
+      "source_reads": 1,
+      "read_bytes": 691,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1937.874,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt",
+        "portfolio/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 863,
+      "source_reads": 3,
+      "read_bytes": 1665,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1941.287,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-11.txt",
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 945,
+      "source_reads": 3,
+      "read_bytes": 1811,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 21.196,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-11.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 491,
+      "source_reads": 1,
+      "read_bytes": 691,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-02",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1956.006,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-11.txt",
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 945,
+      "source_reads": 3,
+      "read_bytes": 1867,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 7.681,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 676,
+      "source_reads": 2,
+      "read_bytes": 1288,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 7.901,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 676,
+      "source_reads": 2,
+      "read_bytes": 1288,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 2220.712,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1024,
+      "source_reads": 3,
+      "read_bytes": 2262,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 2224.015,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "config/권한정책.md",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1848,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 25.072,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 676,
+      "source_reads": 2,
+      "read_bytes": 1288,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-03",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 2241.921,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "config/권한정책.md",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1876,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 9.411,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 932,
+      "source_reads": 2,
+      "read_bytes": 2354,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 13.458,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1847,
+      "source_reads": 2,
+      "read_bytes": 2395,
+      "followup_query": "__future__ bisect_left bisect_right"
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 2198.555,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-02-a.txt",
+        "portfolio/record-04-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 826,
+      "source_reads": 3,
+      "read_bytes": 1628,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 2203.905,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "portfolio/record-07-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1141,
+      "source_reads": 3,
+      "read_bytes": 2896,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 37.795,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "runbooks/INC-7842.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1190,
+      "source_reads": 3,
+      "read_bytes": 2960,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-04",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 2230.919,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "portfolio/record-07-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1154,
+      "source_reads": 3,
+      "read_bytes": 2924,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 2.437,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 2.431,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 2128.492,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 2130.534,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 17.93,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-05",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 2144.787,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1804,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 14.769,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-00-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 984,
+      "source_reads": 3,
+      "read_bytes": 2391,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 19.621,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "ambiguities/record-02-a.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1872,
+      "source_reads": 3,
+      "read_bytes": 2979,
+      "followup_query": "excluded counts channel_errors"
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1937.628,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-06.txt",
+        "background/record-01.txt",
+        "background/record-08.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1063,
+      "source_reads": 3,
+      "read_bytes": 1868,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1942.021,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-06.txt",
+        "background/record-08.txt",
+        "background/record-18.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1064,
+      "source_reads": 3,
+      "read_bytes": 2064,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 44.38,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "public-code/search.py",
+        "ambiguities/record-00-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1007,
+      "source_reads": 3,
+      "read_bytes": 2391,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-06",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1966.468,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-06.txt",
+        "background/record-08.txt",
+        "background/record-18.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1064,
+      "source_reads": 3,
+      "read_bytes": 2064,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 5.666,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 5.48,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1940.996,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1943.936,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1784,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 20.661,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-07",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1961.481,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1840,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 17.145,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-08.txt",
+        "notes/note-03.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1090,
+      "source_reads": 3,
+      "read_bytes": 2547,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 24.385,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "code/cache_policy.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2230,
+      "source_reads": 3,
+      "read_bytes": 3031,
+      "followup_query": "prefer character this"
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1789.469,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "portfolio/record-03-c.txt",
+        "portfolio/record-07-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1019,
+      "source_reads": 3,
+      "read_bytes": 2230,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1801.246,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-08.txt",
+        "notes/note-04.txt",
+        "notes/note-10.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1037,
+      "source_reads": 3,
+      "read_bytes": 2037,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 42.935,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-08.txt",
+        "notes/note-03.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1123,
+      "source_reads": 3,
+      "read_bytes": 2547,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-08",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1823.996,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "notes/note-08.txt",
+        "public-code/search.py",
+        "notes/note-04.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1126,
+      "source_reads": 3,
+      "read_bytes": 2550,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 4.717,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 424,
+      "source_reads": 1,
+      "read_bytes": 624,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 4.683,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 424,
+      "source_reads": 1,
+      "read_bytes": 624,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1700.388,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 952,
+      "source_reads": 3,
+      "read_bytes": 2266,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1703.732,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 952,
+      "source_reads": 3,
+      "read_bytes": 2330,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 19.592,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 424,
+      "source_reads": 1,
+      "read_bytes": 624,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-09",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1725.796,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1026,
+      "source_reads": 3,
+      "read_bytes": 2353,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 17.526,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1105,
+      "source_reads": 3,
+      "read_bytes": 3027,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 28.219,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "runbooks/INC-7842.md"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2158,
+      "source_reads": 3,
+      "read_bytes": 3041,
+      "followup_query": "escaped_term filename_collection_clause and"
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 1705.458,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-08.txt",
+        "public-code/search.py",
+        "code/cache_policy.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1046,
+      "source_reads": 3,
+      "read_bytes": 2310,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 1715.81,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-08.txt",
+        "background/record-23.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1117,
+      "source_reads": 3,
+      "read_bytes": 2545,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 43.186,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1180,
+      "source_reads": 3,
+      "read_bytes": 3027,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-10",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 1739.13,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-08.txt",
+        "public-code/search.py",
+        "background/record-23.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1159,
+      "source_reads": 3,
+      "read_bytes": 2545,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "lexical",
+      "latency_ms": 9.761,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-01.txt",
+        "notes/note-07.txt",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 982,
+      "source_reads": 3,
+      "read_bytes": 1868,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "lexical_followup",
+      "latency_ms": 16.352,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-01.txt",
+        "notes/note-00.txt",
+        "ambiguities/record-00-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1870,
+      "source_reads": 3,
+      "read_bytes": 1848,
+      "followup_query": "automated the"
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "semantic",
+      "latency_ms": 2053.282,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-06.txt",
+        "notes/note-08.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1024,
+      "source_reads": 3,
+      "read_bytes": 2316,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "hybrid",
+      "latency_ms": 2057.571,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-09.txt",
+        "public-code/search.py",
+        "notes/note-01.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1016,
+      "source_reads": 3,
+      "read_bytes": 2362,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "graph",
+      "latency_ms": 34.543,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-01.txt",
+        "notes/note-09.txt",
+        "notes/note-07.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 982,
+      "source_reads": 3,
+      "read_bytes": 1868,
+      "followup_query": null
+    },
+    {
+      "id": "paraphrase-11",
+      "group": "paraphrase",
+      "method": "hybrid_graph",
+      "latency_ms": 2084.673,
+      "complete": false,
+      "requirements_met": [
+        false
+      ],
+      "read_paths": [
+        "notes/note-09.txt",
+        "public-code/search.py",
+        "notes/note-01.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1098,
+      "source_reads": 3,
+      "read_bytes": 2412,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 13.71,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 825,
+      "source_reads": 3,
+      "read_bytes": 1819,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 22.533,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-00-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1702,
+      "source_reads": 3,
+      "read_bytes": 1871,
+      "followup_query": "aurora this"
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2610.248,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "portfolio/record-02-b.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 870,
+      "source_reads": 3,
+      "read_bytes": 1672,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2621.817,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 845,
+      "source_reads": 3,
+      "read_bytes": 1839,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 51.766,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 825,
+      "source_reads": 3,
+      "read_bytes": 1819,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-00",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2645.127,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-00-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 845,
+      "source_reads": 3,
+      "read_bytes": 1839,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 14.364,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 830,
+      "source_reads": 3,
+      "read_bytes": 1824,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 22.192,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-01-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1710,
+      "source_reads": 3,
+      "read_bytes": 1874,
+      "followup_query": "borealis this"
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2212.222,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 872,
+      "source_reads": 3,
+      "read_bytes": 1674,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2221.73,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 847,
+      "source_reads": 3,
+      "read_bytes": 1841,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 39.183,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-01-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 853,
+      "source_reads": 3,
+      "read_bytes": 1847,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-01",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2248.592,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-01-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 847,
+      "source_reads": 3,
+      "read_bytes": 1841,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 14.662,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 824,
+      "source_reads": 3,
+      "read_bytes": 1818,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 23.039,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-02-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1695,
+      "source_reads": 3,
+      "read_bytes": 1865,
+      "followup_query": "cedar this"
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2408.009,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-00-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 874,
+      "source_reads": 3,
+      "read_bytes": 1676,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2416.381,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 849,
+      "source_reads": 3,
+      "read_bytes": 1843,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 38.595,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 824,
+      "source_reads": 3,
+      "read_bytes": 1818,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-02",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2443.048,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-02-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 849,
+      "source_reads": 3,
+      "read_bytes": 1843,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 15.76,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 27.261,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1681,
+      "source_reads": 3,
+      "read_bytes": 1848,
+      "followup_query": "this"
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2017.183,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "portfolio/record-02-b.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 867,
+      "source_reads": 3,
+      "read_bytes": 1669,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2026.652,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 847,
+      "source_reads": 3,
+      "read_bytes": 1841,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 43.03,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-03",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2053.357,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-03-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 847,
+      "source_reads": 3,
+      "read_bytes": 1841,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 22.233,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 826,
+      "source_reads": 3,
+      "read_bytes": 1820,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 23.842,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-04-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1702,
+      "source_reads": 3,
+      "read_bytes": 1870,
+      "followup_query": "kestrel this"
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2180.022,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-02-b.txt",
+        "portfolio/record-00-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 871,
+      "source_reads": 3,
+      "read_bytes": 1673,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2189.578,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 846,
+      "source_reads": 3,
+      "read_bytes": 1840,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 49.389,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 826,
+      "source_reads": 3,
+      "read_bytes": 1820,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-04",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2290.321,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 846,
+      "source_reads": 3,
+      "read_bytes": 1840,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 22.08,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 31.114,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1703,
+      "source_reads": 3,
+      "read_bytes": 1870,
+      "followup_query": "orion this"
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 2116.249,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 849,
+      "source_reads": 3,
+      "read_bytes": 1651,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 2134.133,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 49.673,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 849,
+      "source_reads": 3,
+      "read_bytes": 1843,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-05",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2157.944,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-05-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 13.757,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 825,
+      "source_reads": 3,
+      "read_bytes": 1819,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 20.355,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-06-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1695,
+      "source_reads": 3,
+      "read_bytes": 1864,
+      "followup_query": "harbor this"
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 1962.294,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-02-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 870,
+      "source_reads": 3,
+      "read_bytes": 1672,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 1970.552,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 850,
+      "source_reads": 3,
+      "read_bytes": 1844,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 37.177,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 825,
+      "source_reads": 3,
+      "read_bytes": 1819,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-06",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2020.898,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 850,
+      "source_reads": 3,
+      "read_bytes": 1844,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "lexical",
+      "latency_ms": 22.302,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt",
+        "portfolio/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "lexical_followup",
+      "latency_ms": 29.985,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "code/cache_policy.py",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1698,
+      "source_reads": 3,
+      "read_bytes": 1865,
+      "followup_query": "atlas this"
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "semantic",
+      "latency_ms": 1865.33,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 869,
+      "source_reads": 3,
+      "read_bytes": 1671,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "hybrid",
+      "latency_ms": 1882.502,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 869,
+      "source_reads": 3,
+      "read_bytes": 1863,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "graph",
+      "latency_ms": 47.242,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-05-a.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 844,
+      "source_reads": 3,
+      "read_bytes": 1838,
+      "followup_query": null
+    },
+    {
+      "id": "two-hop-07",
+      "group": "two_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 1910.436,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "portfolio/record-07-a.txt",
+        "portfolio/record-07-b.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 869,
+      "source_reads": 3,
+      "read_bytes": 1863,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "lexical",
+      "latency_ms": 17.62,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-00-a.txt",
+        "events/record-03-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 882,
+      "source_reads": 3,
+      "read_bytes": 1876,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "lexical_followup",
+      "latency_ms": 19.893,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-00-a.txt",
+        "events/record-00-b.txt",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1531,
+      "source_reads": 3,
+      "read_bytes": 1840,
+      "followup_query": "solstice"
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "semantic",
+      "latency_ms": 2014.001,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-01-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 898,
+      "source_reads": 3,
+      "read_bytes": 1700,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "hybrid",
+      "latency_ms": 2023.495,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-03-c.txt",
+        "events/record-01-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 899,
+      "source_reads": 3,
+      "read_bytes": 1893,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "graph",
+      "latency_ms": 44.166,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true,
+        true
+      ],
+      "read_paths": [
+        "events/record-00-a.txt",
+        "events/record-00-b.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 881,
+      "source_reads": 3,
+      "read_bytes": 1875,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-00",
+      "group": "three_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2046.843,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-00-a.txt",
+        "events/record-01-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 886,
+      "source_reads": 3,
+      "read_bytes": 1880,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "lexical",
+      "latency_ms": 13.927,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-01-a.txt",
+        "events/record-00-c.txt",
+        "events/record-01-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 882,
+      "source_reads": 3,
+      "read_bytes": 1876,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "lexical_followup",
+      "latency_ms": 21.139,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-01-a.txt",
+        "events/record-01-b.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1529,
+      "source_reads": 3,
+      "read_bytes": 1837,
+      "followup_query": "nimbus"
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "semantic",
+      "latency_ms": 2095.302,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-00-c.txt",
+        "events/record-01-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 898,
+      "source_reads": 3,
+      "read_bytes": 1700,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "hybrid",
+      "latency_ms": 2103.929,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-00-c.txt",
+        "events/record-02-c.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 881,
+      "source_reads": 3,
+      "read_bytes": 1875,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "graph",
+      "latency_ms": 38.521,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-01-a.txt",
+        "events/record-01-b.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 879,
+      "source_reads": 3,
+      "read_bytes": 1873,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-01",
+      "group": "three_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2131.777,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-01-a.txt",
+        "events/record-00-c.txt",
+        "events/record-02-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 881,
+      "source_reads": 3,
+      "read_bytes": 1875,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "lexical",
+      "latency_ms": 14.787,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-a.txt",
+        "events/record-03-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 879,
+      "source_reads": 3,
+      "read_bytes": 1873,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "lexical_followup",
+      "latency_ms": 16.417,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-a.txt",
+        "events/record-02-b.txt",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1524,
+      "source_reads": 3,
+      "read_bytes": 1836,
+      "followup_query": "quartz"
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "semantic",
+      "latency_ms": 2075.123,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-00-c.txt",
+        "events/record-01-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 898,
+      "source_reads": 3,
+      "read_bytes": 1700,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "hybrid",
+      "latency_ms": 2084.012,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-02-a.txt",
+        "events/record-00-c.txt",
+        "events/record-02-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 880,
+      "source_reads": 3,
+      "read_bytes": 1874,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "graph",
+      "latency_ms": 39.848,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-a.txt",
+        "events/record-02-b.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 877,
+      "source_reads": 3,
+      "read_bytes": 1871,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-02",
+      "group": "three_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2107.353,
+      "complete": false,
+      "requirements_met": [
+        true,
+        true,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-a.txt",
+        "events/record-02-b.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 877,
+      "source_reads": 3,
+      "read_bytes": 1871,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "lexical",
+      "latency_ms": 14.373,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-03-a.txt",
+        "events/record-03-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 885,
+      "source_reads": 3,
+      "read_bytes": 1879,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "lexical_followup",
+      "latency_ms": 14.85,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-03-a.txt",
+        "events/record-03-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 885,
+      "source_reads": 3,
+      "read_bytes": 1879,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "semantic",
+      "latency_ms": 2113.512,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-01-c.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 898,
+      "source_reads": 3,
+      "read_bytes": 1700,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "hybrid",
+      "latency_ms": 2121.784,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-03-a.txt",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 887,
+      "source_reads": 3,
+      "read_bytes": 1881,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "graph",
+      "latency_ms": 41.711,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        true
+      ],
+      "read_paths": [
+        "events/record-03-a.txt",
+        "events/record-00-c.txt",
+        "events/record-03-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 885,
+      "source_reads": 3,
+      "read_bytes": 1879,
+      "followup_query": null
+    },
+    {
+      "id": "three-hop-03",
+      "group": "three_hop",
+      "method": "hybrid_graph",
+      "latency_ms": 2143.617,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false,
+        false
+      ],
+      "read_paths": [
+        "events/record-02-c.txt",
+        "events/record-02-b.txt",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 885,
+      "source_reads": 3,
+      "read_bytes": 1879,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 14.343,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1093,
+      "source_reads": 3,
+      "read_bytes": 2980,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 13.587,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1093,
+      "source_reads": 3,
+      "read_bytes": 2980,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 1922.834,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 946,
+      "source_reads": 3,
+      "read_bytes": 2193,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 1931.955,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 990,
+      "source_reads": 3,
+      "read_bytes": 2429,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 37.616,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1139,
+      "source_reads": 3,
+      "read_bytes": 2984,
+      "followup_query": null
+    },
+    {
+      "id": "literal-00",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 1956.562,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/parse_ref.py",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1139,
+      "source_reads": 3,
+      "read_bytes": 2982,
+      "followup_query": null
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 7.268,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 442,
+      "source_reads": 1,
+      "read_bytes": 644,
+      "followup_query": null
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 13.719,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md",
+        "notes/note-05.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1502,
+      "source_reads": 3,
+      "read_bytes": 2486,
+      "followup_query": "an renew"
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 1728.59,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md",
+        "public-code/search.py",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 963,
+      "source_reads": 3,
+      "read_bytes": 2279,
+      "followup_query": null
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 1731.376,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md",
+        "public-code/search.py",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 963,
+      "source_reads": 3,
+      "read_bytes": 2344,
+      "followup_query": null
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 30.48,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1192,
+      "source_reads": 3,
+      "read_bytes": 2852,
+      "followup_query": null
+    },
+    {
+      "id": "literal-01",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 1757.055,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/INC-7842.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1192,
+      "source_reads": 3,
+      "read_bytes": 2870,
+      "followup_query": null
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 16.287,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1147,
+      "source_reads": 3,
+      "read_bytes": 3050,
+      "followup_query": null
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 17.281,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "notes/note-06.txt",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2136,
+      "source_reads": 3,
+      "read_bytes": 1951,
+      "followup_query": "utc follow"
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 2062.699,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "public-code/search.py",
+        "code/cache_policy.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1014,
+      "source_reads": 3,
+      "read_bytes": 2242,
+      "followup_query": null
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 2072.28,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "background/record-20.txt",
+        "background/record-04.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1063,
+      "source_reads": 3,
+      "read_bytes": 2063,
+      "followup_query": null
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 39.05,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1202,
+      "source_reads": 3,
+      "read_bytes": 3050,
+      "followup_query": null
+    },
+    {
+      "id": "literal-02",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 2100.292,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/decision_log.md",
+        "background/record-20.txt",
+        "background/record-04.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1063,
+      "source_reads": 3,
+      "read_bytes": 2063,
+      "followup_query": null
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 13.542,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "notes/note-05.txt",
+        "ambiguities/record-00-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 906,
+      "source_reads": 3,
+      "read_bytes": 1902,
+      "followup_query": null
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 16.839,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "notes/note-00.txt",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1885,
+      "source_reads": 3,
+      "read_bytes": 1977,
+      "followup_query": "invalidate"
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 2634.304,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "public-code/search.py",
+        "portfolio/record-03-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1021,
+      "source_reads": 3,
+      "read_bytes": 2232,
+      "followup_query": null
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 2642.854,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "public-code/search.py",
+        "notes/note-05.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1070,
+      "source_reads": 3,
+      "read_bytes": 2411,
+      "followup_query": null
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 36.671,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "public-code/search.py",
+        "notes/note-00.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1069,
+      "source_reads": 3,
+      "read_bytes": 2493,
+      "followup_query": null
+    },
+    {
+      "id": "literal-03",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 2669.138,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/cache_policy.py",
+        "public-code/search.py",
+        "notes/note-00.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1069,
+      "source_reads": 3,
+      "read_bytes": 2493,
+      "followup_query": null
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 13.234,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1122,
+      "source_reads": 3,
+      "read_bytes": 3036,
+      "followup_query": null
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 15.898,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2261,
+      "source_reads": 3,
+      "read_bytes": 3009,
+      "followup_query": "search"
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 2305.689,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "public-code/search.py",
+        "notes/note-04.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1029,
+      "source_reads": 3,
+      "read_bytes": 2346,
+      "followup_query": null
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 2314.0,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "notes/note-04.txt",
+        "events/record-00-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 949,
+      "source_reads": 3,
+      "read_bytes": 1947,
+      "followup_query": null
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 36.043,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "public-code/search.py",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1194,
+      "source_reads": 3,
+      "read_bytes": 3036,
+      "followup_query": null
+    },
+    {
+      "id": "literal-04",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 2337.701,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "runbooks/ERR-5901.md",
+        "notes/note-04.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1093,
+      "source_reads": 3,
+      "read_bytes": 2516,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 14.179,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "ambiguities/record-02-a.txt",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 888,
+      "source_reads": 3,
+      "read_bytes": 1884,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 10.562,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "ambiguities/record-02-a.txt",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 888,
+      "source_reads": 3,
+      "read_bytes": 1884,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 1849.946,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "notes/note-03.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1046,
+      "source_reads": 3,
+      "read_bytes": 2265,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 1855.889,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1854,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 33.358,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "ambiguities/record-02-a.txt",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 888,
+      "source_reads": 3,
+      "read_bytes": 1884,
+      "followup_query": null
+    },
+    {
+      "id": "literal-05",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 1872.247,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/release-v3.md",
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1854,
+      "followup_query": null
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 10.9,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "events/record-03-a.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 844,
+      "source_reads": 3,
+      "read_bytes": 1842,
+      "followup_query": null
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 12.721,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "events/record-03-a.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1247,
+      "source_reads": 3,
+      "read_bytes": 1770,
+      "followup_query": "durable_write"
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 1804.762,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "public-code/search.py",
+        "portfolio/record-04-c.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 962,
+      "source_reads": 3,
+      "read_bytes": 2260,
+      "followup_query": null
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 1812.457,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "public-code/search.py",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 949,
+      "source_reads": 3,
+      "read_bytes": 2375,
+      "followup_query": null
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 32.54,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "events/record-01-a.txt",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 848,
+      "source_reads": 3,
+      "read_bytes": 1842,
+      "followup_query": null
+    },
+    {
+      "id": "literal-06",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 1835.285,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "code/receipt_writer.py",
+        "public-code/search.py",
+        "events/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1002,
+      "source_reads": 3,
+      "read_bytes": 2393,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "lexical",
+      "latency_ms": 5.703,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "lexical_followup",
+      "latency_ms": 5.4,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "semantic",
+      "latency_ms": 2050.595,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "hybrid",
+      "latency_ms": 2053.95,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1784,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "graph",
+      "latency_ms": 20.387,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 449,
+      "source_reads": 1,
+      "read_bytes": 664,
+      "followup_query": null
+    },
+    {
+      "id": "literal-07",
+      "group": "literal",
+      "method": "hybrid_graph",
+      "latency_ms": 2068.226,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "config/권한정책.md",
+        "ambiguities/record-03-b.txt",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1840,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "lexical",
+      "latency_ms": 15.591,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-a.txt",
+        "events/record-03-a.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 848,
+      "source_reads": 3,
+      "read_bytes": 1842,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "lexical_followup",
+      "latency_ms": 15.504,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-a.txt",
+        "events/record-03-a.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 848,
+      "source_reads": 3,
+      "read_bytes": 1842,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "semantic",
+      "latency_ms": 1861.559,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-a.txt",
+        "ambiguities/record-01-b.txt",
+        "ambiguities/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 852,
+      "source_reads": 3,
+      "read_bytes": 1654,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "hybrid",
+      "latency_ms": 1874.361,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-a.txt",
+        "ambiguities/record-01-b.txt",
+        "ambiguities/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 852,
+      "source_reads": 3,
+      "read_bytes": 1846,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "graph",
+      "latency_ms": 40.255,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-b.txt",
+        "ambiguities/record-00-a.txt",
+        "events/record-01-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 814,
+      "source_reads": 3,
+      "read_bytes": 1808,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-00",
+      "group": "ambiguous",
+      "method": "hybrid_graph",
+      "latency_ms": 2007.48,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-00-b.txt",
+        "ambiguities/record-00-a.txt",
+        "ambiguities/record-01-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 817,
+      "source_reads": 3,
+      "read_bytes": 1811,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "lexical",
+      "latency_ms": 17.805,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 985,
+      "source_reads": 3,
+      "read_bytes": 2437,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "lexical_followup",
+      "latency_ms": 19.163,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1406,
+      "source_reads": 3,
+      "read_bytes": 2367,
+      "followup_query": "aster"
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "semantic",
+      "latency_ms": 1998.653,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "ambiguities/record-00-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 852,
+      "source_reads": 3,
+      "read_bytes": 1654,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "hybrid",
+      "latency_ms": 2007.967,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "ambiguities/record-00-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 852,
+      "source_reads": 3,
+      "read_bytes": 1846,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "graph",
+      "latency_ms": 41.876,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1018,
+      "source_reads": 3,
+      "read_bytes": 2437,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-01",
+      "group": "ambiguous",
+      "method": "hybrid_graph",
+      "latency_ms": 2035.244,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-01-a.txt",
+        "ambiguities/record-01-b.txt",
+        "ambiguities/record-00-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 852,
+      "source_reads": 3,
+      "read_bytes": 1846,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "lexical",
+      "latency_ms": 12.662,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/release-v3.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1890,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "lexical_followup",
+      "latency_ms": 12.68,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/release-v3.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1890,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "semantic",
+      "latency_ms": 1844.515,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/decision_log.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1706,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "hybrid",
+      "latency_ms": 1852.305,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/release-v3.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1890,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "graph",
+      "latency_ms": 39.1,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/release-v3.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1890,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-02",
+      "group": "ambiguous",
+      "method": "hybrid_graph",
+      "latency_ms": 1875.289,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-02-a.txt",
+        "ambiguities/record-02-b.txt",
+        "config/release-v3.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1890,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "lexical",
+      "latency_ms": 8.861,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 651,
+      "source_reads": 2,
+      "read_bytes": 1248,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "lexical_followup",
+      "latency_ms": 6.755,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 651,
+      "source_reads": 2,
+      "read_bytes": 1248,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "semantic",
+      "latency_ms": 1787.023,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1720,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "hybrid",
+      "latency_ms": 1790.735,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1848,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "graph",
+      "latency_ms": 25.513,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 651,
+      "source_reads": 2,
+      "read_bytes": 1248,
+      "followup_query": null
+    },
+    {
+      "id": "ambiguous-03",
+      "group": "ambiguous",
+      "method": "hybrid_graph",
+      "latency_ms": 1804.433,
+      "complete": true,
+      "requirements_met": [
+        true
+      ],
+      "read_paths": [
+        "ambiguities/record-03-a.txt",
+        "ambiguities/record-03-b.txt",
+        "config/권한정책.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 903,
+      "source_reads": 3,
+      "read_bytes": 1876,
+      "followup_query": null
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "lexical",
+      "latency_ms": 15.561,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "ambiguities/record-00-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1078,
+      "source_reads": 3,
+      "read_bytes": 2984,
+      "followup_query": null
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "lexical_followup",
+      "latency_ms": 24.282,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "ambiguities/record-00-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1943,
+      "source_reads": 3,
+      "read_bytes": 2948,
+      "followup_query": "payload_budget estimate_tokens focus_note"
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "semantic",
+      "latency_ms": 2061.027,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "ambiguities/record-01-a.txt",
+        "background/record-19.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1071,
+      "source_reads": 3,
+      "read_bytes": 2326,
+      "followup_query": null
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "hybrid",
+      "latency_ms": 2069.981,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-05.txt",
+        "notes/note-00.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1077,
+      "source_reads": 3,
+      "read_bytes": 2541,
+      "followup_query": null
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "graph",
+      "latency_ms": 43.309,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "ambiguities/record-00-b.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1142,
+      "source_reads": 3,
+      "read_bytes": 2984,
+      "followup_query": null
+    },
+    {
+      "id": "absent-00",
+      "group": "absent",
+      "method": "hybrid_graph",
+      "latency_ms": 2100.877,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-05.txt",
+        "notes/note-00.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1118,
+      "source_reads": 3,
+      "read_bytes": 2541,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "lexical",
+      "latency_ms": 2.636,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "lexical_followup",
+      "latency_ms": 2.647,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "semantic",
+      "latency_ms": 2124.029,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "public-code/search.py",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1024,
+      "source_reads": 3,
+      "read_bytes": 2262,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "hybrid",
+      "latency_ms": 2126.861,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "public-code/search.py",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1024,
+      "source_reads": 3,
+      "read_bytes": 2262,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "graph",
+      "latency_ms": 21.702,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [],
+      "search_calls": 1,
+      "search_bytes": 36,
+      "source_reads": 0,
+      "read_bytes": 0,
+      "followup_query": null
+    },
+    {
+      "id": "absent-01",
+      "group": "absent",
+      "method": "hybrid_graph",
+      "latency_ms": 2151.066,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "ambiguities/record-03-b.txt",
+        "public-code/search.py",
+        "ambiguities/record-03-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1023,
+      "source_reads": 3,
+      "read_bytes": 2342,
+      "followup_query": null
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "lexical",
+      "latency_ms": 11.977,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "notes/note-00.txt",
+        "ambiguities/record-00-b.txt",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 894,
+      "source_reads": 3,
+      "read_bytes": 1892,
+      "followup_query": null
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "lexical_followup",
+      "latency_ms": 16.936,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "notes/note-00.txt",
+        "code/cache_policy.py",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1873,
+      "source_reads": 3,
+      "read_bytes": 1977,
+      "followup_query": "invalidate"
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "semantic",
+      "latency_ms": 1919.55,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "events/record-03-b.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 953,
+      "source_reads": 3,
+      "read_bytes": 2268,
+      "followup_query": null
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "hybrid",
+      "latency_ms": 1926.12,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "graph",
+      "latency_ms": 37.576,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "notes/note-00.txt",
+        "ambiguities/record-00-b.txt",
+        "code/cache_policy.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 883,
+      "source_reads": 3,
+      "read_bytes": 1843,
+      "followup_query": null
+    },
+    {
+      "id": "absent-02",
+      "group": "absent",
+      "method": "hybrid_graph",
+      "latency_ms": 1949.524,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-04-a.txt",
+        "portfolio/record-06-a.txt",
+        "portfolio/record-07-a.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 827,
+      "source_reads": 3,
+      "read_bytes": 1821,
+      "followup_query": null
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "lexical",
+      "latency_ms": 13.779,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "portfolio/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1027,
+      "source_reads": 3,
+      "read_bytes": 3025,
+      "followup_query": null
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "lexical_followup",
+      "latency_ms": 17.281,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "portfolio/record-03-b.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 1863,
+      "source_reads": 3,
+      "read_bytes": 2989,
+      "followup_query": "last_sync_at last_sync as_json"
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "semantic",
+      "latency_ms": 1943.421,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-03-b.txt",
+        "portfolio/record-02-b.txt",
+        "portfolio/record-05-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 889,
+      "source_reads": 3,
+      "read_bytes": 1691,
+      "followup_query": null
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "hybrid",
+      "latency_ms": 1950.919,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-03-b.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 889,
+      "source_reads": 3,
+      "read_bytes": 1883,
+      "followup_query": null
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "graph",
+      "latency_ms": 39.197,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "portfolio/record-03-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1178,
+      "source_reads": 3,
+      "read_bytes": 3025,
+      "followup_query": null
+    },
+    {
+      "id": "absent-03",
+      "group": "absent",
+      "method": "hybrid_graph",
+      "latency_ms": 1985.559,
+      "complete": null,
+      "requirements_met": [],
+      "read_paths": [
+        "portfolio/record-03-b.txt",
+        "portfolio/record-05-b.txt",
+        "portfolio/record-07-b.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 889,
+      "source_reads": 3,
+      "read_bytes": 1883,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "lexical",
+      "latency_ms": 22.049,
+      "complete": true,
+      "requirements_met": [
+        true,
+        true
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "background/record-08.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1198,
+      "source_reads": 3,
+      "read_bytes": 3099,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "lexical_followup",
+      "latency_ms": 22.2,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "notes/note-05.txt"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2306,
+      "source_reads": 3,
+      "read_bytes": 3039,
+      "followup_query": "start_line none end_line"
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "semantic",
+      "latency_ms": 1846.412,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "code/receipt_writer.py",
+        "notes/note-08.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1016,
+      "source_reads": 3,
+      "read_bytes": 2262,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "hybrid",
+      "latency_ms": 1858.358,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "background/record-18.txt",
+        "background/record-23.txt",
+        "background/record-20.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1118,
+      "source_reads": 3,
+      "read_bytes": 2118,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "graph",
+      "latency_ms": 43.501,
+      "complete": false,
+      "requirements_met": [
+        true,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "background/record-08.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1254,
+      "source_reads": 3,
+      "read_bytes": 3095,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-definition-and-call",
+      "group": "public_code",
+      "method": "hybrid_graph",
+      "latency_ms": 1884.1,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "background/record-18.txt",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1254,
+      "source_reads": 3,
+      "read_bytes": 3101,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "lexical",
+      "latency_ms": 17.74,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "runbooks/ERR-5901.md",
+        "public-code/search.py"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1153,
+      "source_reads": 3,
+      "read_bytes": 3040,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "lexical_followup",
+      "latency_ms": 21.693,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 2,
+      "search_bytes": 2015,
+      "source_reads": 3,
+      "read_bytes": 3007,
+      "followup_query": "_location prefix_template footer_template"
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "semantic",
+      "latency_ms": 1806.928,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "runbooks/ERR-5901.md",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1079,
+      "source_reads": 3,
+      "read_bytes": 2333,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "hybrid",
+      "latency_ms": 1817.944,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "runbooks/ERR-5901.md",
+        "notes/note-09.txt"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1079,
+      "source_reads": 3,
+      "read_bytes": 2529,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "graph",
+      "latency_ms": 40.42,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "public-code/search.py",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1196,
+      "source_reads": 3,
+      "read_bytes": 3040,
+      "followup_query": null
+    },
+    {
+      "id": "real-code-policy-and-revalidation",
+      "group": "public_code",
+      "method": "hybrid_graph",
+      "latency_ms": 1844.77,
+      "complete": false,
+      "requirements_met": [
+        false,
+        false
+      ],
+      "read_paths": [
+        "public-code/search.py",
+        "notes/note-09.txt",
+        "runbooks/ERR-5901.md"
+      ],
+      "search_calls": 1,
+      "search_bytes": 1105,
+      "source_reads": 3,
+      "read_bytes": 2529,
+      "followup_query": null
+    }
+  ],
+  "effective_method_peak_rss_bytes": {
+    "lexical": 31899648,
+    "lexical_followup": 31375360,
+    "semantic": 1457684480,
+    "hybrid": 1457684480,
+    "graph": 31522816,
+    "hybrid_graph": 1457684480
+  },
+  "paired_cases": {
+    "lexical": {
+      "lexical_followup": {
+        "recovered": [
+          "two-hop-00",
+          "two-hop-01",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-05",
+          "two-hop-06",
+          "two-hop-07"
+        ],
+        "regressed": [
+          "paraphrase-08",
+          "real-code-definition-and-call"
+        ]
+      },
+      "semantic": {
+        "recovered": [
+          "paraphrase-01",
+          "paraphrase-06",
+          "two-hop-05",
+          "two-hop-07"
+        ],
+        "regressed": [
+          "paraphrase-08",
+          "real-code-definition-and-call"
+        ]
+      },
+      "hybrid": {
+        "recovered": [
+          "paraphrase-06",
+          "two-hop-07"
+        ],
+        "regressed": [
+          "real-code-definition-and-call"
+        ]
+      },
+      "graph": {
+        "recovered": [
+          "three-hop-00",
+          "two-hop-01",
+          "two-hop-05",
+          "two-hop-07"
+        ],
+        "regressed": [
+          "real-code-definition-and-call"
+        ]
+      },
+      "hybrid_graph": {
+        "recovered": [
+          "paraphrase-06",
+          "two-hop-07"
+        ],
+        "regressed": [
+          "real-code-definition-and-call"
+        ]
+      }
+    },
+    "lexical_followup": {
+      "lexical": {
+        "recovered": [
+          "paraphrase-08",
+          "real-code-definition-and-call"
+        ],
+        "regressed": [
+          "two-hop-00",
+          "two-hop-01",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-05",
+          "two-hop-06",
+          "two-hop-07"
+        ]
+      },
+      "semantic": {
+        "recovered": [
+          "paraphrase-01",
+          "paraphrase-06"
+        ],
+        "regressed": [
+          "two-hop-00",
+          "two-hop-01",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-06"
+        ]
+      },
+      "hybrid": {
+        "recovered": [
+          "paraphrase-06",
+          "paraphrase-08"
+        ],
+        "regressed": [
+          "two-hop-00",
+          "two-hop-01",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-05",
+          "two-hop-06"
+        ]
+      },
+      "graph": {
+        "recovered": [
+          "paraphrase-08",
+          "three-hop-00"
+        ],
+        "regressed": [
+          "two-hop-00",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-06"
+        ]
+      },
+      "hybrid_graph": {
+        "recovered": [
+          "paraphrase-06",
+          "paraphrase-08"
+        ],
+        "regressed": [
+          "two-hop-00",
+          "two-hop-01",
+          "two-hop-02",
+          "two-hop-04",
+          "two-hop-05",
+          "two-hop-06"
+        ]
+      }
+    }
+  },
+  "interpretation_limits": [
+    "Predeclared literal-span checks, not LLM answer accuracy. Equivalent alternative evidence can be undercounted.",
+    "Small deliberately selected diagnostic corpus; not representative or a ranking of memory systems.",
+    "Graph uses automatic surface-form co-occurrence, not a full Graphiti or HippoRAG implementation.",
+    "One prepared embedding model; no conclusion about every semantic model.",
+    "Methods share a small parent fixture/graph process. Sampled RSS is not incremental per-method memory.",
+    "Current semantic adapter starts a cold process and fingerprints the model per query; resident-model timings are reported separately.",
+    "Equal-score ties use opaque IDs derived from source roots; roots can change ties.",
+    "Curated memory is rejected by the current semantic pilot, not a supported policy feature."
+  ],
+  "graph_counts": {
+    "passages": 109
+  }
+}

@@ -40,5 +40,8 @@ readers; remove the semantic state only after those readers stop.
 
 Core unit tests cover stale references, span budgets, and model-policy changes.
 They do not run model inference or establish semantic relevance quality. This
-public preparation does not claim that a newly downloaded semantic runtime has
-been verified end to end.
+public preparation does not verify arbitrary newly downloaded runtimes. A later
+[local diagnostic](../benchmarks/PRACTICAL_VARIANTS.md) exercised the pinned
+prepared runtime/model with real inference, source reads, stale-source rejection,
+and collection guards. It found limited recoveries and regressions, and does not
+justify default integration or curated-memory support.

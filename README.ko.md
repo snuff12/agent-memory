@@ -139,6 +139,10 @@ Markdown, 텍스트, 코드, HTML, PDF, DOCX, PPTX, XLSX, HWPX를 지원합니�
 
 ## 검증
 
+[의미검색·그래프 로컬 진단](benchmarks/PRACTICAL_VARIANTS.ko.md)에서는 고정된 작업형
+질문으로 원문 읽기, 후속 검색, 시간·메모리를 비교했습니다. 일부 이점과 손실을
+함께 확인했으며, 기본 검색은 유지했습니다.
+
 [LongMemEval-S 검색 벤치마크](benchmarks/README.ko.md)는 고정된 데이터로 LLM 없이
 실행합니다. 같은 청크의 BM25 단어 검색과 비교하고, 실제 CLI 출력 예산의 영향도
 측정합니다. 공개 점수는 필요한 대화 세션을 찾는 성능이며, 최종 답변 정확도가 아닙니다.

@@ -182,6 +182,10 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 
 ## Develop and verify
 
+The [local semantic/graph diagnostic](benchmarks/PRACTICAL_VARIANTS.md) compares
+source reads, a follow-up baseline, latency and memory on fixed diagnostic cases.
+It found some useful recoveries and regressions; default search remains unchanged.
+
 [LongMemEval-S retrieval benchmarking](benchmarks/README.md) provides a pinned,
 LLM-free evaluation with a word-only BM25 comparison and the actual CLI byte
 budget. Published numbers measure evidence-session retrieval, not answer accuracy.
