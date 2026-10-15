@@ -1,5 +1,8 @@
 # Retrieval and bounded-output improvements
 
+Latest: [0.3.0 full remeasurement](V0_3_0.md), with an immediate-parent control.
+The historical scores below remain unchanged.
+
 These are historical measurements of engine commit `ea53b90`. A subsequent
 practical review found that unconditionally hiding a second chunk of the same
 document lost useful evidence. Current rendering keeps additional chunks when

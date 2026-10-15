@@ -6,8 +6,8 @@
 확인하세요. 아래 LongMemEval 점수와는 다른 실험입니다.
 
 질문에 답하는 데 필요한 **대화 세션을 찾는 능력**을 측정합니다.
-LLM·API 키·GPU 없이 실행합니다. [최신 개선 결과](IMPROVEMENTS.ko.md)와
-[첫 평가 결과](RESULTS.ko.md)는
+LLM·API 키·GPU 없이 실행합니다. [0.3.0 재측정](V0_3_0.ko.md),
+[이전 개선 기록](IMPROVEMENTS.ko.md), [첫 평가 결과](RESULTS.ko.md)는
 고정한 LongMemEval-S 정제본 전체의 검색 결과입니다. 최종 답변 정확도는 측정하지 않습니다.
 
 ## 실행

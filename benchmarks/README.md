@@ -7,7 +7,8 @@ For the separate native-system adoption diagnostic, see the
 
 This benchmark measures whether Agent Memory retrieves the conversation sessions
 that contain the evidence for a question. It needs no model, API key, or GPU.
-The [initial results](RESULTS.md) and [retrieval improvements](IMPROVEMENTS.md) cover the full pinned cleaned
+The [0.3.0 remeasurement](V0_3_0.md), [initial results](RESULTS.md), and
+[earlier retrieval improvements](IMPROVEMENTS.md) cover the full pinned cleaned
 LongMemEval-S dataset. They are **session retrieval scores**, not answer accuracy.
 
 ## Reproduce

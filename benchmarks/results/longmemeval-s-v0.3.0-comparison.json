@@ -1,0 +1,476 @@
+{
+  "date": "2026-10-16",
+  "measured_engine_commit": "ff1c3e1746e592c6314b6e11251cf28f84eaa41b",
+  "measured_engine_version": "0.3.0",
+  "control_engine_commit": "5c7fda145f1d66ba179b866af2ffd28da56ebbb6",
+  "historical_reference_commit": "ea53b90",
+  "protocol": "longmemeval-s-session-retrieval-v1",
+  "same_data_settings_and_harness": true,
+  "same_source_home_for_control": true,
+  "source_paths_note": "New and control engines ran sequentially at the same per-question source-home path; the completed directories were moved to preserve both raw runs. Historical reference used a different output path.",
+  "scope": "Default single-query session retrieval only; semantic=false, no locate/fetch or answer generation",
+  "historical_vs_new": {
+    "amem_candidates": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 37,
+          "regressed": 25,
+          "unchanged": 408,
+          "mean_before": 0.761702,
+          "mean_after": 0.787234
+        },
+        "session_all@1": {
+          "improved": 14,
+          "regressed": 19,
+          "unchanged": 437,
+          "mean_before": 0.255319,
+          "mean_after": 0.244681
+        },
+        "session_recall@1": {
+          "improved": 37,
+          "regressed": 25,
+          "unchanged": 408,
+          "mean_before": 0.484149,
+          "mean_after": 0.491312
+        },
+        "session_hit@5": {
+          "improved": 21,
+          "regressed": 13,
+          "unchanged": 436,
+          "mean_before": 0.908511,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 42,
+          "regressed": 20,
+          "unchanged": 408,
+          "mean_before": 0.723404,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 50,
+          "regressed": 26,
+          "unchanged": 394,
+          "mean_before": 0.823191,
+          "mean_after": 0.852553
+        },
+        "session_hit@10": {
+          "improved": 14,
+          "regressed": 9,
+          "unchanged": 447,
+          "mean_before": 0.953191,
+          "mean_after": 0.96383
+        },
+        "session_all@10": {
+          "improved": 35,
+          "regressed": 17,
+          "unchanged": 418,
+          "mean_before": 0.819149,
+          "mean_after": 0.857447
+        },
+        "session_recall@10": {
+          "improved": 39,
+          "regressed": 22,
+          "unchanged": 409,
+          "mean_before": 0.894858,
+          "mean_after": 0.917518
+        },
+        "session_mrr": {
+          "improved": 56,
+          "regressed": 33,
+          "unchanged": 381,
+          "mean_before": 0.830621,
+          "mean_after": 0.849627
+        }
+      },
+      "changed_session_rankings": 272
+    },
+    "amem_cli_4000_bytes": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 37,
+          "regressed": 25,
+          "unchanged": 408,
+          "mean_before": 0.761702,
+          "mean_after": 0.787234
+        },
+        "session_all@1": {
+          "improved": 14,
+          "regressed": 19,
+          "unchanged": 437,
+          "mean_before": 0.255319,
+          "mean_after": 0.244681
+        },
+        "session_recall@1": {
+          "improved": 37,
+          "regressed": 25,
+          "unchanged": 408,
+          "mean_before": 0.484149,
+          "mean_after": 0.491312
+        },
+        "session_hit@5": {
+          "improved": 21,
+          "regressed": 13,
+          "unchanged": 436,
+          "mean_before": 0.908511,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 42,
+          "regressed": 20,
+          "unchanged": 408,
+          "mean_before": 0.723404,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 50,
+          "regressed": 26,
+          "unchanged": 394,
+          "mean_before": 0.823191,
+          "mean_after": 0.852553
+        },
+        "session_hit@10": {
+          "improved": 14,
+          "regressed": 9,
+          "unchanged": 447,
+          "mean_before": 0.953191,
+          "mean_after": 0.96383
+        },
+        "session_all@10": {
+          "improved": 35,
+          "regressed": 17,
+          "unchanged": 418,
+          "mean_before": 0.819149,
+          "mean_after": 0.857447
+        },
+        "session_recall@10": {
+          "improved": 39,
+          "regressed": 22,
+          "unchanged": 409,
+          "mean_before": 0.894858,
+          "mean_after": 0.917518
+        },
+        "session_mrr": {
+          "improved": 56,
+          "regressed": 33,
+          "unchanged": 381,
+          "mean_before": 0.830621,
+          "mean_after": 0.849627
+        }
+      },
+      "changed_session_rankings": 272
+    },
+    "fts5_bm25": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 38,
+          "regressed": 22,
+          "unchanged": 410,
+          "mean_before": 0.76383,
+          "mean_after": 0.797872
+        },
+        "session_all@1": {
+          "improved": 16,
+          "regressed": 17,
+          "unchanged": 437,
+          "mean_before": 0.253191,
+          "mean_after": 0.251064
+        },
+        "session_recall@1": {
+          "improved": 38,
+          "regressed": 22,
+          "unchanged": 410,
+          "mean_before": 0.483617,
+          "mean_after": 0.499645
+        },
+        "session_hit@5": {
+          "improved": 18,
+          "regressed": 13,
+          "unchanged": 439,
+          "mean_before": 0.914894,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 39,
+          "regressed": 19,
+          "unchanged": 412,
+          "mean_before": 0.72766,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 46,
+          "regressed": 27,
+          "unchanged": 397,
+          "mean_before": 0.828582,
+          "mean_after": 0.85156
+        },
+        "session_hit@10": {
+          "improved": 12,
+          "regressed": 9,
+          "unchanged": 449,
+          "mean_before": 0.955319,
+          "mean_after": 0.961702
+        },
+        "session_all@10": {
+          "improved": 33,
+          "regressed": 16,
+          "unchanged": 421,
+          "mean_before": 0.823404,
+          "mean_after": 0.859574
+        },
+        "session_recall@10": {
+          "improved": 36,
+          "regressed": 22,
+          "unchanged": 412,
+          "mean_before": 0.897057,
+          "mean_after": 0.917766
+        },
+        "session_mrr": {
+          "improved": 52,
+          "regressed": 31,
+          "unchanged": 387,
+          "mean_before": 0.832016,
+          "mean_after": 0.855509
+        }
+      },
+      "changed_session_rankings": 268
+    }
+  },
+  "control_vs_new": {
+    "amem_candidates": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.787234,
+          "mean_after": 0.787234
+        },
+        "session_all@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.244681,
+          "mean_after": 0.244681
+        },
+        "session_recall@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.491312,
+          "mean_after": 0.491312
+        },
+        "session_hit@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.925532,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.770213,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.852553,
+          "mean_after": 0.852553
+        },
+        "session_hit@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.96383,
+          "mean_after": 0.96383
+        },
+        "session_all@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.857447,
+          "mean_after": 0.857447
+        },
+        "session_recall@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.917518,
+          "mean_after": 0.917518
+        },
+        "session_mrr": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.849627,
+          "mean_after": 0.849627
+        }
+      },
+      "changed_session_rankings": 0
+    },
+    "amem_cli_4000_bytes": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.787234,
+          "mean_after": 0.787234
+        },
+        "session_all@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.244681,
+          "mean_after": 0.244681
+        },
+        "session_recall@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.491312,
+          "mean_after": 0.491312
+        },
+        "session_hit@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.925532,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.770213,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.852553,
+          "mean_after": 0.852553
+        },
+        "session_hit@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.96383,
+          "mean_after": 0.96383
+        },
+        "session_all@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.857447,
+          "mean_after": 0.857447
+        },
+        "session_recall@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.917518,
+          "mean_after": 0.917518
+        },
+        "session_mrr": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.849627,
+          "mean_after": 0.849627
+        }
+      },
+      "changed_session_rankings": 0
+    },
+    "fts5_bm25": {
+      "metrics": {
+        "session_hit@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.797872,
+          "mean_after": 0.797872
+        },
+        "session_all@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.251064,
+          "mean_after": 0.251064
+        },
+        "session_recall@1": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.499645,
+          "mean_after": 0.499645
+        },
+        "session_hit@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.925532,
+          "mean_after": 0.925532
+        },
+        "session_all@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.770213,
+          "mean_after": 0.770213
+        },
+        "session_recall@5": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.85156,
+          "mean_after": 0.85156
+        },
+        "session_hit@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.961702,
+          "mean_after": 0.961702
+        },
+        "session_all@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.859574,
+          "mean_after": 0.859574
+        },
+        "session_recall@10": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.917766,
+          "mean_after": 0.917766
+        },
+        "session_mrr": {
+          "improved": 0,
+          "regressed": 0,
+          "unchanged": 470,
+          "mean_before": 0.855509,
+          "mean_after": 0.855509
+        }
+      },
+      "changed_session_rankings": 0
+    }
+  },
+  "mean_cli_visible_sessions": {
+    "historical": 13.758,
+    "control": 13.76,
+    "current": 13.76
+  },
+  "public_files_sha256": {
+    "longmemeval-s-v0.3.0.json": "d0829e2b347fbd85de6f2612c47fa8af6c378c89de9325251e7099c13691efc4",
+    "longmemeval-s-v0.3.0-cases.json": "5d2fc4cdfeb5f3309c803ad4679303c5ecb5bddb55f98d2ce5b4f5478ae49908",
+    "longmemeval-s-pre-v0.3.0-control.json": "463e9103952d3f89d14dbc5582903c57e9da61042b8e5d971b585eb4e210ee26"
+  }
+}

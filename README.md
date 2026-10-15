@@ -198,6 +198,10 @@ The [local semantic/graph diagnostic](benchmarks/PRACTICAL_VARIANTS.md) compares
 source reads, a follow-up baseline, latency and memory on fixed diagnostic cases.
 It found some useful recoveries and regressions; default search remains unchanged.
 
+The [0.3.0 LongMemEval-S remeasurement](benchmarks/V0_3_0.md) records 85.74%
+all-evidence session retrieval @10; a fresh immediate-parent control matches it.
+The optional semantic/source-reading features are outside that protocol.
+
 [LongMemEval-S retrieval benchmarking](benchmarks/README.md) provides a pinned,
 LLM-free evaluation with a word-only BM25 comparison and the actual CLI byte
 budget. Published numbers measure evidence-session retrieval, not answer accuracy.

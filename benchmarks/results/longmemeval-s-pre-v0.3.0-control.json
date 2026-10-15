@@ -1,0 +1,376 @@
+{
+  "protocol": "longmemeval-s-session-retrieval-v1",
+  "dataset": {
+    "name": "LongMemEval-S cleaned",
+    "revision": "98d7416c24c778c2fee6e6f3006e7a073259d48f",
+    "sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+    "pinned": true,
+    "url": "https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/98d7416c24c778c2fee6e6f3006e7a073259d48f/longmemeval_s_cleaned.json"
+  },
+  "full_dataset": true,
+  "started_at": "2026-10-15T15:04:45.449560+00:00",
+  "engine_source_sha256": "c7ad3a5d7c2f4370081e842030e335044738fbd3b7fd5d2a875a3aae8dd0a03e",
+  "harness_sha256": "ad413428b1afa7c52ec2f387679b170de6a06d8cea1d72cdab8813e52a44ef80",
+  "environment": {
+    "python": "3.9.6",
+    "sqlite": "3.54.0",
+    "system": "Darwin",
+    "release": "27.0.0",
+    "machine": "arm64"
+  },
+  "settings": {
+    "chunk_chars": 2400,
+    "chunk_overlap_chars": 240,
+    "candidate_chunks": 20,
+    "per_session_chunk_cap": 2,
+    "session_k": [
+      1,
+      5,
+      10
+    ],
+    "cli_search_budget_bytes": 4000,
+    "llm": null,
+    "query_expansion": false,
+    "semantic_embeddings": false
+  },
+  "elapsed_seconds": 283.522,
+  "cases": 500,
+  "answerable_cases": 470,
+  "abstention_cases": 30,
+  "systems": {
+    "amem_candidates": {
+      "metrics": {
+        "session_hit@1": 0.787234,
+        "session_all@1": 0.244681,
+        "session_recall@1": 0.491312,
+        "session_hit@5": 0.925532,
+        "session_all@5": 0.770213,
+        "session_recall@5": 0.852553,
+        "session_hit@10": 0.96383,
+        "session_all@10": 0.857447,
+        "session_recall@10": 0.917518,
+        "session_mrr": 0.849627
+      },
+      "by_type": {
+        "knowledge-update": {
+          "cases": 72,
+          "metrics": {
+            "session_hit@1": 0.944444,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.472222,
+            "session_hit@5": 1.0,
+            "session_all@5": 0.986111,
+            "session_recall@5": 0.993056,
+            "session_hit@10": 1.0,
+            "session_all@10": 0.986111,
+            "session_recall@10": 0.993056,
+            "session_mrr": 0.969907
+          }
+        },
+        "multi-session": {
+          "cases": 121,
+          "metrics": {
+            "session_hit@1": 0.826446,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.352893,
+            "session_hit@5": 0.966942,
+            "session_all@5": 0.661157,
+            "session_recall@5": 0.824242,
+            "session_hit@10": 0.983471,
+            "session_all@10": 0.768595,
+            "session_recall@10": 0.89146,
+            "session_mrr": 0.890788
+          }
+        },
+        "single-session-assistant": {
+          "cases": 56,
+          "metrics": {
+            "session_hit@1": 0.660714,
+            "session_all@1": 0.660714,
+            "session_recall@1": 0.660714,
+            "session_hit@5": 0.875,
+            "session_all@5": 0.875,
+            "session_recall@5": 0.875,
+            "session_hit@10": 0.928571,
+            "session_all@10": 0.928571,
+            "session_recall@10": 0.928571,
+            "session_mrr": 0.756009
+          }
+        },
+        "single-session-preference": {
+          "cases": 30,
+          "metrics": {
+            "session_hit@1": 0.266667,
+            "session_all@1": 0.266667,
+            "session_recall@1": 0.266667,
+            "session_hit@5": 0.666667,
+            "session_all@5": 0.666667,
+            "session_recall@5": 0.666667,
+            "session_hit@10": 0.9,
+            "session_all@10": 0.9,
+            "session_recall@10": 0.9,
+            "session_mrr": 0.436958
+          }
+        },
+        "single-session-user": {
+          "cases": 64,
+          "metrics": {
+            "session_hit@1": 0.90625,
+            "session_all@1": 0.90625,
+            "session_recall@1": 0.90625,
+            "session_hit@5": 0.96875,
+            "session_all@5": 0.96875,
+            "session_recall@5": 0.96875,
+            "session_hit@10": 1.0,
+            "session_all@10": 1.0,
+            "session_recall@10": 1.0,
+            "session_mrr": 0.936849
+          }
+        },
+        "temporal-reasoning": {
+          "cases": 127,
+          "metrics": {
+            "session_hit@1": 0.779528,
+            "session_all@1": 0.094488,
+            "session_recall@1": 0.403281,
+            "session_hit@5": 0.905512,
+            "session_all@5": 0.629921,
+            "session_recall@5": 0.775328,
+            "session_hit@10": 0.937008,
+            "session_all@10": 0.755906,
+            "session_recall@10": 0.857218,
+            "session_mrr": 0.837027
+          }
+        }
+      },
+      "query_ms_p50": 22.521,
+      "query_ms_p95": 73.77,
+      "abstention_questions_with_candidates": 30
+    },
+    "amem_cli_4000_bytes": {
+      "metrics": {
+        "session_hit@1": 0.787234,
+        "session_all@1": 0.244681,
+        "session_recall@1": 0.491312,
+        "session_hit@5": 0.925532,
+        "session_all@5": 0.770213,
+        "session_recall@5": 0.852553,
+        "session_hit@10": 0.96383,
+        "session_all@10": 0.857447,
+        "session_recall@10": 0.917518,
+        "session_mrr": 0.849627
+      },
+      "by_type": {
+        "knowledge-update": {
+          "cases": 72,
+          "metrics": {
+            "session_hit@1": 0.944444,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.472222,
+            "session_hit@5": 1.0,
+            "session_all@5": 0.986111,
+            "session_recall@5": 0.993056,
+            "session_hit@10": 1.0,
+            "session_all@10": 0.986111,
+            "session_recall@10": 0.993056,
+            "session_mrr": 0.969907
+          }
+        },
+        "multi-session": {
+          "cases": 121,
+          "metrics": {
+            "session_hit@1": 0.826446,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.352893,
+            "session_hit@5": 0.966942,
+            "session_all@5": 0.661157,
+            "session_recall@5": 0.824242,
+            "session_hit@10": 0.983471,
+            "session_all@10": 0.768595,
+            "session_recall@10": 0.89146,
+            "session_mrr": 0.890788
+          }
+        },
+        "single-session-assistant": {
+          "cases": 56,
+          "metrics": {
+            "session_hit@1": 0.660714,
+            "session_all@1": 0.660714,
+            "session_recall@1": 0.660714,
+            "session_hit@5": 0.875,
+            "session_all@5": 0.875,
+            "session_recall@5": 0.875,
+            "session_hit@10": 0.928571,
+            "session_all@10": 0.928571,
+            "session_recall@10": 0.928571,
+            "session_mrr": 0.756009
+          }
+        },
+        "single-session-preference": {
+          "cases": 30,
+          "metrics": {
+            "session_hit@1": 0.266667,
+            "session_all@1": 0.266667,
+            "session_recall@1": 0.266667,
+            "session_hit@5": 0.666667,
+            "session_all@5": 0.666667,
+            "session_recall@5": 0.666667,
+            "session_hit@10": 0.9,
+            "session_all@10": 0.9,
+            "session_recall@10": 0.9,
+            "session_mrr": 0.436958
+          }
+        },
+        "single-session-user": {
+          "cases": 64,
+          "metrics": {
+            "session_hit@1": 0.90625,
+            "session_all@1": 0.90625,
+            "session_recall@1": 0.90625,
+            "session_hit@5": 0.96875,
+            "session_all@5": 0.96875,
+            "session_recall@5": 0.96875,
+            "session_hit@10": 1.0,
+            "session_all@10": 1.0,
+            "session_recall@10": 1.0,
+            "session_mrr": 0.936849
+          }
+        },
+        "temporal-reasoning": {
+          "cases": 127,
+          "metrics": {
+            "session_hit@1": 0.779528,
+            "session_all@1": 0.094488,
+            "session_recall@1": 0.403281,
+            "session_hit@5": 0.905512,
+            "session_all@5": 0.629921,
+            "session_recall@5": 0.775328,
+            "session_hit@10": 0.937008,
+            "session_all@10": 0.755906,
+            "session_recall@10": 0.857218,
+            "session_mrr": 0.837027
+          }
+        }
+      },
+      "query_ms_p50": 22.521,
+      "query_ms_p95": 73.77,
+      "abstention_questions_with_candidates": 30
+    },
+    "fts5_bm25": {
+      "metrics": {
+        "session_hit@1": 0.797872,
+        "session_all@1": 0.251064,
+        "session_recall@1": 0.499645,
+        "session_hit@5": 0.925532,
+        "session_all@5": 0.770213,
+        "session_recall@5": 0.85156,
+        "session_hit@10": 0.961702,
+        "session_all@10": 0.859574,
+        "session_recall@10": 0.917766,
+        "session_mrr": 0.855509
+      },
+      "by_type": {
+        "knowledge-update": {
+          "cases": 72,
+          "metrics": {
+            "session_hit@1": 0.944444,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.472222,
+            "session_hit@5": 1.0,
+            "session_all@5": 0.986111,
+            "session_recall@5": 0.993056,
+            "session_hit@10": 1.0,
+            "session_all@10": 0.986111,
+            "session_recall@10": 0.993056,
+            "session_mrr": 0.969907
+          }
+        },
+        "multi-session": {
+          "cases": 121,
+          "metrics": {
+            "session_hit@1": 0.834711,
+            "session_all@1": 0.0,
+            "session_recall@1": 0.356336,
+            "session_hit@5": 0.966942,
+            "session_all@5": 0.661157,
+            "session_recall@5": 0.820799,
+            "session_hit@10": 0.983471,
+            "session_all@10": 0.785124,
+            "session_recall@10": 0.901791,
+            "session_mrr": 0.898708
+          }
+        },
+        "single-session-assistant": {
+          "cases": 56,
+          "metrics": {
+            "session_hit@1": 0.678571,
+            "session_all@1": 0.678571,
+            "session_recall@1": 0.678571,
+            "session_hit@5": 0.839286,
+            "session_all@5": 0.839286,
+            "session_recall@5": 0.839286,
+            "session_hit@10": 0.928571,
+            "session_all@10": 0.928571,
+            "session_recall@10": 0.928571,
+            "session_mrr": 0.759284
+          }
+        },
+        "single-session-preference": {
+          "cases": 30,
+          "metrics": {
+            "session_hit@1": 0.3,
+            "session_all@1": 0.3,
+            "session_recall@1": 0.3,
+            "session_hit@5": 0.733333,
+            "session_all@5": 0.733333,
+            "session_recall@5": 0.733333,
+            "session_hit@10": 0.9,
+            "session_all@10": 0.9,
+            "session_recall@10": 0.9,
+            "session_mrr": 0.454669
+          }
+        },
+        "single-session-user": {
+          "cases": 64,
+          "metrics": {
+            "session_hit@1": 0.921875,
+            "session_all@1": 0.921875,
+            "session_recall@1": 0.921875,
+            "session_hit@5": 0.96875,
+            "session_all@5": 0.96875,
+            "session_recall@5": 0.96875,
+            "session_hit@10": 1.0,
+            "session_all@10": 1.0,
+            "session_recall@10": 1.0,
+            "session_mrr": 0.947049
+          }
+        },
+        "temporal-reasoning": {
+          "cases": 127,
+          "metrics": {
+            "session_hit@1": 0.787402,
+            "session_all@1": 0.094488,
+            "session_recall@1": 0.407218,
+            "session_hit@5": 0.905512,
+            "session_all@5": 0.629921,
+            "session_recall@5": 0.774934,
+            "session_hit@10": 0.929134,
+            "session_all@10": 0.748031,
+            "session_recall@10": 0.848294,
+            "session_mrr": 0.840483
+          }
+        }
+      },
+      "query_ms_p50": 5.057,
+      "query_ms_p95": 12.18,
+      "abstention_questions_with_candidates": 30
+    }
+  },
+  "max_cli_search_bytes": 4000,
+  "mean_cli_search_bytes": 3987.6,
+  "index_ms_p50": 473.88,
+  "indexed_sessions": 23867,
+  "duplicate_session_id_entries": 13,
+  "indexed_chunks": 134811,
+  "case_records_sha256": "48674c9f392991c12335fa3b88b2d0f22c51aa0b5822a5ba571e6915e695c3ec"
+}
