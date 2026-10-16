@@ -19,6 +19,14 @@ than 12 explicit terms can still overflow the limit. `--explain` shows retained
 terms and the first 12 omitted terms, plus the full omission count. Quotes set
 priority; retrieval still combines OR matches rather than requiring a phrase.
 
+A Korean particle attached to a file name, identifier, or Latin word
+(`config.yaml을`, `SQLite는`, `INC-7842의`) also yields the bare name, so file
+name and identifier priority still apply. Under the 12-term limit the bare name
+takes the particle form's place. Only a fixed particle list is split: `API키는`
+stays one term. A trailing period after Korean text is dropped (`포인트.` →
+`포인트`); `os.`, `config.yaml`, and `회의록.md` keep their dots, and a period
+inside a word, as in `했어요.그리고`, stays part of the term.
+
 Diagnostics show bounded candidate counts per channel, active scope/status,
 and changed/unreadable documents checked before returning results. They inspect
 only policy-eligible candidates. A zero count cannot distinguish an absent term
@@ -41,6 +49,8 @@ weight. The output retains the source ref, provenance, chunk character offsets,
 and explicit notices about omitted text. It returns unchanged text, not a
 generated answer. A literal miss falls back to the ordinary first read and says
 so. Very small budgets may be insufficient for provenance and a complete term.
+Word bounds follow the index: `backoff` focuses inside `compute_backoff_delay`
+and `API` inside `API의`, but `off` does not match inside `backoff`.
 
 Focus requires `around=0`, `part=1`, and no explicit character span. Omit the
 query for ordinary `--part` / `--around` reads. Focus cannot reach a different

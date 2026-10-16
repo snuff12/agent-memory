@@ -26,6 +26,17 @@ def call_tool(config, name, **arguments):
                                   "params": {"name": name, "arguments": arguments}})
 
 
+def write_search_source_before_context(directory: Path) -> Path:
+    """Copy live search.py up to context(), a later _focus_span caller that
+    would compete with the definition under the two-chunks-per-file cap."""
+    text = Path(search_module.__file__).read_text()
+    end = text.index("\ndef context(")
+    assert text.index("\ndef fetch(") < end, "context() must follow fetch(), the _focus_span call site"
+    path = directory / "search.py"
+    path.write_text(text[:end])
+    return path
+
+
 class PracticalRetrievalTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -71,7 +82,8 @@ class PracticalRetrievalTests(unittest.TestCase):
     def test_code_review_reads_both_definition_and_callsite(self):
         # Real public source, indexed in an isolated home. Finding the file ID
         # alone is not enough to review a function's behavior and its caller.
-        selected = replace(self.config.sources[0], path=Path(search_module.__file__).resolve())
+        path = write_search_source_before_context(self.source)
+        selected = replace(self.config.sources[0], path=path.resolve())
         self.config = replace(self.config, sources=(selected,), chunk_chars=2400)
         sync_all(self.config)
         question = "Please inspect the retrieval implementation and explain how a late source passage is chosen by _focus_span"

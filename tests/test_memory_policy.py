@@ -133,7 +133,7 @@ class MemoryPolicyTests(unittest.TestCase):
             root = Path(tmp)
             source = root / "source"
             source.mkdir()
-            path = source / "test.md"
+            path = source / "test.txt"
             path.write_text("legacyneedle evidence")
             config = load_config(make_home(root, source))
             sync_all(config)

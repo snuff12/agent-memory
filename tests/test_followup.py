@@ -16,9 +16,9 @@ from agent_memory.indexer import sync_all
 from agent_memory.memory_policy import MemoryPolicy
 from agent_memory.mcp_server import handle_request
 from agent_memory.search import SearchDiagnostics, StaleReferenceError, fetch, search
-import agent_memory.search as search_module
 from tests.test_memory_policy import card
 from tests.test_memory_system import make_home
+from tests.test_practical_retrieval import write_search_source_before_context
 
 
 class FollowupTests(unittest.TestCase):
@@ -53,7 +53,7 @@ class FollowupTests(unittest.TestCase):
         self.assertEqual(owner.read_text(), "Mina maintains Aurora.")
 
     def test_followup_keeps_definition_and_callsite_as_separate_evidence(self):
-        (self.source / "search.py").write_text(Path(search_module.__file__).read_text())
+        write_search_source_before_context(self.source)
         config = replace(self.config, chunk_chars=2400)
         sync_all(config)
         first = search(config, "_focus_span", collection="test", limit=1)[0]

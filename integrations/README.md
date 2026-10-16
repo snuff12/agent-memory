@@ -52,8 +52,11 @@ before `mcp` if it differs from the default:
 ```
 
 Available tools are `memory_catalog`, `memory_search`, `memory_fetch`, and `memory_locate`.
-Use MCP when the host needs structured calls; the CLI skill is sufficient for
-agents with shell access.
+By default each carries read-only, non-destructive, closed-world annotations
+for host approval policies. If `feedback.auto_record_zero_results` is enabled,
+`memory_search` is listed as not read-only, since a zero-result search appends a
+private feedback row. Use MCP when the host needs structured calls; the CLI
+skill is sufficient for agents with shell access.
 
 ## Optional macOS schedule
 

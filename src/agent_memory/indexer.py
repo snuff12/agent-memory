@@ -555,13 +555,34 @@ def _successful_sync_age_seconds(
     return age if age >= 0 else None
 
 
+def outdated_document_count(connection: sqlite3.Connection, config: AppConfig, source: SourceConfig) -> int:
+    """Count indexed documents that reads reject until the next sync.
+
+    A parser, chunk-policy or card-metadata version change keeps the last sync
+    time but fails those documents closed, so freshness must count them too.
+    """
+    count = 0
+    for row in connection.execute(
+        "SELECT d.extension, d.parser_version, d.chunker_version, COALESCE(m.version=?, 0) AS metadata_current, "
+        "COUNT(*) AS total FROM documents d LEFT JOIN memory_metadata m ON m.document_id=d.id "
+        "WHERE d.collection_name=? AND d.status='ok' GROUP BY 1, 2, 3, 4",
+        (METADATA_VERSION, source.name),
+    ):
+        if (row["parser_version"] != PARSER_VERSION
+                or row["chunker_version"] != stored_chunker_version(config, source, row["extension"])
+                or (source.kind == "curated_memory" and not row["metadata_current"])):
+            count += row["total"]
+    return count
+
+
 def ensure_fresh(
     config: AppConfig,
     source: SourceConfig,
     max_age_seconds: float,
     verbose: bool = False,
 ) -> SyncStats:
-    """Reconcile one source only when its last successful sync exceeds an SLA.
+    """Reconcile one source when its last successful sync exceeds an SLA, or
+    when indexed documents predate the current parser/projection/card metadata.
 
     The freshness check is deliberately repeated while holding ``sync_lock``.
     This makes concurrent agents coalesce: the first caller reconciles and the
@@ -582,9 +603,10 @@ def ensure_fresh(
                 _register_collection(connection, configured_source)
             connection.commit()
             age = _successful_sync_age_seconds(connection, source.name)
+            outdated = outdated_document_count(connection, config, source)
         finally:
             connection.close()
-        if age is not None and age <= max_age_seconds:
+        if age is not None and age <= max_age_seconds and not outdated:
             stats = SyncStats(collection=source.name)
             stats.message = "fresh (last successful sync %ds ago)" % int(age)
             return stats

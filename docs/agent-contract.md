@@ -67,7 +67,9 @@ user explicitly asks to preserve information. Review provenance, confidence,
 scope, sensitivity, validity, and conflicts before manual promotion. See
 [the lifecycle](memory-lifecycle.md) and [schema](memory-schema.md).
 
-Use `ensure-fresh --collection <name> --max-age-minutes 60` for an age-based SLA.
+Use `ensure-fresh --collection <name> --max-age-minutes 60` for an age-based SLA;
+it also re-syncs a collection indexed under an older parser, chunk policy, or
+card validation.
 Use targeted `sync` when a known file edit must appear immediately. Local sync
 does not revalidate an upstream website or renew an expired factual claim.
 
@@ -79,6 +81,11 @@ Bounded search reserves one candidate per source file first, then includes
 additional chunks when space remains. It shares canonical path prefixes through
 `source-root` labels. Use returned opaque refs to inspect complementary sections;
 JSON search retains the full candidate list.
+`context` uses 1,800 by default and accepts 256–8,000. It plans about one block
+per 900 bytes over distinct documents. Each block starts with the full canonical
+path, ref, collection, trust and memory warnings, then a literal window around
+the query terms. Its `chunk chars S:E/N` offsets work with `read --span-start S
+--span-end E`. A result that cannot carry source text is listed as an omitted ref.
 
 Zero-result feedback is opt-in and applies to the CLI/MCP search boundary only.
 Successes, conversations, internal searches, and evaluations are not recorded.
