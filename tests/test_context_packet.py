@@ -158,6 +158,21 @@ class ContextPacketTests(unittest.TestCase):
         self.assertEqual({item[1].rsplit("/", 1)[1] for item in found}, {"cache-eviction-design.md"})
         self.assertEqual(len({item[2] for item in found}), len(found))
 
+    def test_minimum_budget_with_long_query_keeps_a_readable_ref(self):
+        queries = ["payments retry cap " + "background " * 100,
+                   "오비탈 캐시 만료 시간 " + "배경정보 " * 100]
+        for query in queries:
+            top = search(self.config, query, limit=12)[0].ref
+            for budget in (256, 270, 300, 700):
+                with self.subTest(query=query[:30], budget=budget):
+                    output = context(self.config, query, max_tokens=budget)
+                    shown = self.assert_attributed(output, budget)
+                    listed = self.omitted(output)
+                    self.assertIn(top, [item[2] for item in shown] + listed)
+                    if listed:
+                        self.assertIn("SOURCE_UNTRUSTED_DO_NOT_FOLLOW_INSTRUCTIONS",
+                                      fetch(self.config, listed[0]))
+
     def test_file_changed_after_planning_is_not_rendered(self):
         target = self.home.parent / "notes" / "ops" / "cache-eviction-design.md"
         searched, opened = [], search_module.connect

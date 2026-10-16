@@ -81,8 +81,10 @@ credentials, or conversations. Gold exports are disabled evaluation candidates.
 
 Use `amem context` only for a bounded multi-document packet. Each block names its
 canonical path and ref before a literal source window; refs that did not fit are
-listed as omitted. Budget units are conservative UTF-8 bytes. Context plans about
-one block per 900 bytes: the default 1,800 gives about two documents, and each
+listed as omitted. The query header may be shortened to preserve a complete ref
+at small budgets; read that ref before citing evidence. Budget units are
+conservative UTF-8 bytes. Context plans about one block per 900 bytes: the default
+1,800 gives about two documents, and each
 further document needs about 900 more (`--max-tokens` accepts 256–8,000). Below
 about 1,800 expect a single block; for one known ref prefer
 `amem read '<ref>' --max-bytes 1200`, a useful starting read budget for mixed

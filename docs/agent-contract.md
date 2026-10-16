@@ -86,6 +86,8 @@ per 900 bytes over distinct documents. Each block starts with the full canonical
 path, ref, collection, trust and memory warnings, then a literal window around
 the query terms. Its `chunk chars S:E/N` offsets work with `read --span-start S
 --span-end E`. A result that cannot carry source text is listed as an omitted ref.
+At small budgets, the query header yields space to at least one complete ref.
+If only omitted refs fit, fetch a returned ref before using it as evidence.
 
 Zero-result feedback is opt-in and applies to the CLI/MCP search boundary only.
 Successes, conversations, internal searches, and evaluations are not recorded.
