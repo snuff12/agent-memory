@@ -23,6 +23,8 @@ TEXT_EXTENSIONS = {
     ".json", ".jsonl", ".yaml", ".yml", ".toml", ".ini", ".cfg",
     ".csv", ".tsv", ".sql", ".graphql", ".css", ".scss", ".xml",
 }
+# Chunked at Markdown ATX headings outside fenced code; versioned by projection.
+MARKDOWN_HEADING_EXTENSIONS = frozenset({".md", ".markdown", ".org", ".rst"})
 OFFICE_EXTENSIONS = {".docx", ".pptx", ".xlsx", ".hwpx"}
 SUPPORTED_EXTENSIONS = TEXT_EXTENSIONS | OFFICE_EXTENSIONS | {".pdf", ".html", ".htm"}
 
@@ -250,7 +252,7 @@ def extract_file(path: Path, config: AppConfig) -> ExtractionResult:
         units = [
             ExtractedUnit(
                 text=text,
-                markdown_headings=suffix in {".md", ".markdown", ".org", ".rst"},
+                markdown_headings=suffix in MARKDOWN_HEADING_EXTENSIONS,
             )
         ]
         extractor = "text"
@@ -295,7 +297,8 @@ def extract_file(path: Path, config: AppConfig) -> ExtractionResult:
         for index, draft in enumerate(drafts)
     ]
     sample = units[0].text if units else ""
-    title = discover_title(sample, path.stem.replace("-", " ").replace("_", " "))
+    fences = bool(units) and units[0].markdown_headings
+    title = discover_title(sample, path.stem.replace("-", " ").replace("_", " "), fences)
     warning = ""
     if not drafts:
         warning = "no extractable text"

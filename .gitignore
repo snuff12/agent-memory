@@ -30,3 +30,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+# Agent harness state: nested worktrees and per-user settings.
+/.claude/worktrees/
+/.claude/settings.local.json

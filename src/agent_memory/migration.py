@@ -6,7 +6,7 @@ from pathlib import Path
 from .config import AppConfig, source_by_name
 from .database import CHUNKER_VERSION, PARSER_VERSION, connect
 from .indexer import _eligible_file, _is_within, sync_lock
-from .projection import legacy_fingerprint, stored_chunker_version
+from .projection import _chunk_policy, legacy_fingerprint, stored_chunker_version
 from .util import sha256_file
 
 
@@ -26,7 +26,9 @@ def migrate_projections(config: AppConfig, pdfium: str, pypdf: str) -> dict:
                 current = stored_chunker_version(config, source, extension)
                 if row["chunker_version"] == current:
                     continue
-                if extension == ".pdf" or (extension == ".py" and config.python_chunking == "ast"):
+                # Only line-v1 text projections can be byte-identical to legacy rows;
+                # PDF and every other chunk policy (AST, fence-aware Markdown) are rebuilt by sync.
+                if extension == ".pdf" or _chunk_policy(config, extension) != "line-v1":
                     rebuild += 1
                     continue
                 legacy = "%s:%s" % (CHUNKER_VERSION, legacy_fingerprint(config, source, pdfium, pypdf))

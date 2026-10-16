@@ -263,6 +263,7 @@ def _initialize(connection: sqlite3.Connection) -> None:
             UNIQUE(collection_name, path)
         );
         CREATE INDEX IF NOT EXISTS documents_collection_idx ON documents(collection_name);
+        CREATE INDEX IF NOT EXISTS documents_collection_id_idx ON documents(collection_name, id);
         CREATE INDEX IF NOT EXISTS documents_generation_idx ON documents(generation);
         CREATE TABLE IF NOT EXISTS memory_metadata (
             document_id TEXT PRIMARY KEY REFERENCES documents(id) ON DELETE CASCADE,

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sqlite3
 import stat
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Optional, Sequence
 
 from . import __version__
@@ -25,10 +26,10 @@ from .feedback import (
     show_failure,
     write_feedback_export,
 )
-from .indexer import ensure_fresh, stats_to_dict, sync_all, sync_lock, sync_source
+from .indexer import ensure_fresh, outdated_document_count, stats_to_dict, sync_all, sync_lock, sync_source
 from .followup import followup_search, format_followup
 from .mcp_server import run_server
-from .memory_policy import MemoryPolicy, parse_memory
+from .memory_policy import METADATA_VERSION, MemoryPolicy, parse_memory
 from .migration import migrate_projections
 from .search import (
     SearchDiagnostics,
@@ -39,8 +40,9 @@ from .search import (
     format_search,
     format_search_with_visible_hits,
     search,
+    _validate_document,
 )
-from .util import atomic_create_text, estimate_tokens, json_dumps, slugify, utc_now
+from .util import atomic_create_text, estimate_tokens, json_dumps, normalize_text, slugify, utc_now
 
 
 CAPTURE_KINDS = ("decision", "fact", "preference", "episode", "procedure")
@@ -236,6 +238,14 @@ def _parse_timestamp(value: Optional[str]) -> Optional[datetime]:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
+def _invalid_card_counts(connection: sqlite3.Connection) -> dict:
+    """Per curated collection, indexed cards whose metadata failed validation (default search excludes them)."""
+    return {str(row[0]): int(row[1]) for row in connection.execute(
+        "SELECT d.collection_name, COUNT(*) FROM memory_metadata m JOIN documents d ON d.id=m.document_id "
+        "JOIN collections col ON col.name=d.collection_name WHERE col.kind='curated_memory' AND col.enabled=1 "
+        "AND d.status='ok' AND m.entry_type='invalid' AND m.version=? GROUP BY d.collection_name", (METADATA_VERSION,))}
+
+
 def _status(config, as_json: bool, max_age_hours: Optional[float] = None) -> tuple[str, bool]:  # type: ignore[no-untyped-def]
     age_limit = float(max_age_hours if max_age_hours is not None else config.sync_max_age_hours)
     if not 0 < age_limit <= 24 * 365:
@@ -253,7 +263,7 @@ def _status(config, as_json: bool, max_age_hours: Optional[float] = None) -> tup
             "sync_overdue": enabled_names,
             "sync_failed": [],
             "source_missing": missing_sources,
-            "freshness_basis": "last_successful_sync_age_only",
+            "freshness_basis": "last_successful_sync_age_and_current_projection",
             "message": "run amem sync",
         }
     else:
@@ -281,14 +291,20 @@ def _status(config, as_json: bool, max_age_hours: Optional[float] = None) -> tup
                     timestamps.append(synced_at)
                 if row and row["last_sync_ok"] != 1:
                     failed.append(name)
+            # A version change hides these documents until sync, whatever the sync age.
+            outdated = {
+                source.name: count for source in config.sources if source.enabled
+                for count in [outdated_document_count(connection, config, source)] if count
+            }
             payload = {
                 "ready": True,
-                "fresh": not overdue and not failed and not missing_sources,
+                "fresh": not overdue and not failed and not missing_sources and not outdated,
                 "database": str(config.database),
                 "database_bytes": config.database.stat().st_size,
                 "documents": connection.execute("SELECT COUNT(*) FROM documents WHERE status='ok'").fetchone()[0],
                 "chunks": connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0],
                 "errors": connection.execute("SELECT COUNT(*) FROM documents WHERE status='error'").fetchone()[0],
+                "invalid_memory_cards": sum(_invalid_card_counts(connection).values()),
                 "trigram": trigram_available(connection),
                 "collections": connection.execute("SELECT COUNT(*) FROM collections WHERE enabled=1").fetchone()[0],
                 "sync_max_age_hours": age_limit,
@@ -296,7 +312,8 @@ def _status(config, as_json: bool, max_age_hours: Optional[float] = None) -> tup
                 "sync_overdue": overdue,
                 "sync_failed": failed,
                 "source_missing": missing_sources,
-                "freshness_basis": "last_successful_sync_age_only",
+                "outdated_documents": outdated,
+                "freshness_basis": "last_successful_sync_age_and_current_projection",
             }
         finally:
             connection.close()
@@ -435,10 +452,113 @@ def _doctor(config, as_json: bool) -> tuple[str, bool]:  # type: ignore[no-untyp
     checks.append({"name": "pdf_parser", "ok": pdf_ok, "detail": "PDFium primary + pypdf fallback"})
     for source in config.sources:
         checks.append({"name": "source:%s" % source.name, "ok": (not source.enabled or source.path.exists()), "detail": str(source.path)})
+    # Card problems are content warnings, not prerequisites: they never fail doctor.
+    card_check, card_warnings = _memory_card_report(config)
+    checks.append(card_check)
     ok = all(check["ok"] for check in checks)
     if as_json:
-        return json_dumps({"ok": ok, "checks": checks}, pretty=True), ok
-    return "\n".join("[%s] %s — %s" % ("ok" if item["ok"] else "fail", item["name"], item["detail"]) for item in checks), ok
+        return json_dumps({"ok": ok, "checks": checks, "warnings": card_warnings}, pretty=True), ok
+    # Paths come from file names; escape them so one cannot forge a doctor line.
+    lines = ["[%s] %s — %s" % ("fail" if not item["ok"] else "warn" if item.get("warning") else "ok", item["name"],
+                               _line_safe(item["detail"])) for item in checks]
+    lines.extend("[warn] %s — %s: %s" % (item["name"], _line_safe(item["path"]), _line_safe(item["detail"]))
+                 for item in card_warnings)
+    return "\n".join(lines), ok
+
+
+def _line_safe(value: str) -> str:
+    """Escape line separators and other non-printable characters for one text line."""
+    return "".join(char if char.isprintable() else "\\u%04x" % ord(char) for char in str(value))
+
+
+def _home_relative(config, row) -> str:  # type: ignore[no-untyped-def]
+    try:
+        return Path(row["path"]).relative_to(config.home).as_posix()
+    except ValueError:
+        return "%s:%s" % (row["collection_name"], row["relative_path"])
+
+
+def _unchanged_card_text(config, row) -> Optional[str]:  # type: ignore[no-untyped-def]
+    """Read a card only while it passes the read gate and still holds the bytes sync hashed."""
+    try:
+        if not _validate_document(row, config, {}):
+            return None
+        # Hash the bytes actually read: the gate hashed an earlier read of the file.
+        data = Path(row["path"]).read_bytes()
+        if len(data) > config.max_text_file_bytes or hashlib.sha256(data).hexdigest() != row["source_sha256"]:
+            return None
+        return normalize_text(data.decode("utf-8-sig"))
+    except (OSError, RuntimeError, ValueError):  # RuntimeError: a symlink loop before Python 3.13
+        return None
+
+
+def _memory_card_report(config) -> tuple[dict, list]:  # type: ignore[no-untyped-def]
+    """Read-only curated-card health from the index and unchanged card files.
+
+    Output names home-relative paths and stored validation errors only, never
+    card text. supersedes is linted, not enforced: retrieval ignores it.
+    """
+    check = {"name": "memory_cards", "ok": True, "warning": False, "detail": "pending-first-sync"}
+    if not config.database.exists():
+        return check, []
+    try:
+        connection = connect(config, readonly=True)
+        try:
+            rows = connection.execute(
+                "SELECT d.collection_name, d.path, d.relative_path, d.real_path, d.extension, d.chunker_version, "
+                "d.size_bytes, d.mtime_ns, d.source_sha256, m.entry_type, "
+                "m.memory_status, m.review_after, m.error, m.version FROM documents d "
+                "JOIN collections col ON col.name=d.collection_name LEFT JOIN memory_metadata m ON m.document_id=d.id "
+                "WHERE col.kind='curated_memory' AND col.enabled=1 AND d.status='ok' "
+                "ORDER BY d.collection_name, d.relative_path").fetchall()
+        finally:
+            connection.close()
+    except (sqlite3.Error, OSError, ValueError):
+        check["detail"] = "index unreadable; run amem sync"
+        return check, []
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    indexed = {(row["collection_name"], row["relative_path"]): row for row in rows}
+    warnings = []
+    pending = overdue = unlinted = 0
+    for row in rows:
+        path = _home_relative(config, row)
+        if row["version"] != METADATA_VERSION:
+            pending += 1
+            continue
+        if row["entry_type"] == "invalid":
+            warnings.append({"name": "invalid_memory_card", "path": path, "detail": " ".join(row["error"].split())[:240]})
+            continue
+        if row["entry_type"] != "card" or row["memory_status"] == "inbox":
+            continue
+        if row["memory_status"] == "reviewed" and row["review_after"] and row["review_after"] <= now:
+            overdue += 1
+        text = _unchanged_card_text(config, row)
+        if text is None:
+            unlinted += 1
+            continue
+        targets = parse_memory(Path(row["path"]), text)["supersedes"]
+        if targets is None or targets == "":
+            continue
+        targets = [targets] if isinstance(targets, str) else targets
+        if not isinstance(targets, list) or not 0 < len(targets) <= 8 or not all(isinstance(item, str) for item in targets):
+            warnings.append({"name": "supersedes", "path": path, "detail": "must be one vault-relative path or a list of at most 8"})
+            continue
+        for target in targets:
+            # Index-only lookup: keys are root-relative, so absolute or ".." targets cannot match.
+            linked = indexed.get((row["collection_name"], PurePosixPath(target.strip()).as_posix()))
+            if linked is None:
+                warnings.append({"name": "supersedes", "path": path, "detail": "target is missing from the vault index"})
+            elif linked["memory_status"] != "superseded":
+                warnings.append({"name": "supersedes", "path": path,
+                                 "detail": "target %s is not marked status: superseded" % _home_relative(config, linked)})
+    invalid = sum(item["name"] == "invalid_memory_card" for item in warnings)
+    check["warning"] = bool(warnings or overdue or pending)
+    check["detail"] = "cards=%d invalid=%d supersedes_issues=%d reviewed_past_review_after=%d%s%s%s" % (
+        len(rows), invalid, len(warnings) - invalid, overdue,
+        " changed_since_sync_not_linted=%d" % unlinted if unlinted else "",
+        " awaiting_validation_by_sync=%d" % pending if pending else "",
+        " (invalid cards are excluded from default retrieval; content warnings do not fail doctor)" if check["warning"] else "")
+    return check, warnings
 
 
 def _capture(config, args: argparse.Namespace) -> Path:  # type: ignore[no-untyped-def]
@@ -691,11 +811,28 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "sync":
             results = sync_all(config, args.collection, dry_run=args.dry_run, verbose=args.verbose)
             payload = [stats_to_dict(item) for item in results]
-            print(json_dumps(payload, pretty=True) if args.json else "\n".join(
-                "%s: scanned=%d indexed=%d unchanged=%d removed=%d errors=%d chunks=%d (%s)"
-                % (item.collection, item.scanned, item.indexed, item.unchanged, item.removed, item.errors, item.chunks, item.message)
-                for item in results
-            ))
+            invalid_cards: Optional[dict] = None
+            if not args.dry_run:
+                try:
+                    connection = connect(config, readonly=True)
+                    try:
+                        invalid_cards = _invalid_card_counts(connection)
+                    finally:
+                        connection.close()
+                except (sqlite3.Error, OSError):
+                    pass  # the sync result stands; status and doctor report card health
+            curated = {source.name for source in config.sources if source.kind == "curated_memory" and source.enabled}
+            lines = []
+            for item, entry in zip(results, payload):
+                lines.append("%s: scanned=%d indexed=%d unchanged=%d removed=%d errors=%d chunks=%d (%s)"
+                    % (item.collection, item.scanned, item.indexed, item.unchanged, item.removed, item.errors, item.chunks, item.message))
+                if invalid_cards is not None and item.collection in curated:
+                    # Reported apart from extraction errors: the cards indexed fine but fail closed.
+                    entry["invalid_memory_cards"] = count = invalid_cards.get(item.collection, 0)
+                    if count:
+                        lines.append("%s: %d invalid memory card%s excluded; run amem doctor"
+                                     % (item.collection, count, "" if count == 1 else "s"))
+            print(json_dumps(payload, pretty=True) if args.json else "\n".join(lines))
             return 1 if any(item.errors for item in results) else 0
         if args.command == "ensure-fresh":
             max_age_minutes = (

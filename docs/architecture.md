@@ -42,9 +42,13 @@ unvisited records and fails the freshness gate.
 
 FTS5 word and CJK character searches are combined using reciprocal rank fusion.
 One/two-character substring fallback is restricted to CJK terms. Short Latin
-function words use the word index; they do not add scan-order substring votes.
+function words use the word index; they do not add arbitrary substring votes.
 Path hints also omit short Latin words. Exact filename navigation
 and trigram/compact candidates remain available.
+Chunk IDs, not index insertion order, decide ties within a channel and which
+short CJK substring matches enter it. Editing and restoring a file, or
+rebuilding `.state/`, therefore keeps the same results. Chunk IDs include the
+absolute path, so another home or source location can still change ties.
 Collection and reviewed-memory filters apply before result limits. Fetch checks
 the generation, file hash, current source policy, and memory policy again.
 Deleted or changed sources cannot be read with old references.
@@ -52,7 +56,13 @@ Deleted or changed sources cannot be read with old references.
 The document parser supports text, code, HTML, PDF, and selected Office/XML
 formats. Archive expansion has a size limit. Extraction does not include OCR.
 Optional Python AST chunking groups functions and classes when it can do so
-without losing source coverage.
+without losing source coverage. Markdown, Org, and reStructuredText files are
+sectioned at `#` headings outside fenced code blocks, so comments inside a
+code block do not split it or name a section. A change to a file type's
+chunking or extraction policy hides its documents, and fails their old refs as
+stale, until the next `amem sync` re-indexes them. `status` lists such rows as
+`outdated_documents` and reports the index as not fresh, and `ensure-fresh`
+re-syncs a collection that has them even within its age SLA.
 
 ## Interfaces
 
@@ -61,8 +71,11 @@ uses the checkout's private venv, and removes hostile Python path overrides.
 An installed wheel supplies the same `amem` console command without the shell.
 
 A shared agent skill calls the CLI on demand. The optional stdio MCP exposes
-`memory_catalog`, `memory_search`, and `memory_fetch`. Neither interface preloads
-the corpus into each conversation.
+`memory_catalog`, `memory_search`, `memory_fetch`, and `memory_locate`. By
+default all four are annotated as read-only and closed-world. When opt-in
+zero-result feedback is enabled, `memory_search` is listed as not read-only
+because it can append a private feedback row. Neither interface preloads the
+corpus into each conversation.
 
 Bounded plain search reserves metadata and short snippets for distinct source
 documents before expanding snippets. It shows a canonical `source-root` once
@@ -72,7 +85,9 @@ pointer; additional chunks are included when space remains, so complementary
 sections of one document remain discoverable. Selected hits appear in their
 original rank order. JSON and unbounded search retain the full chunk candidate list; reads
 retain full canonical paths. Existing 4,000-byte CLI and 6,000-byte MCP limits
-remain in force.
+remain in force. Context blocks also start with the full canonical path and ref
+and spend the rest of their share on a literal source window. Results that do
+not fit are listed as omitted refs instead of being shown without source text.
 
 ## Lifecycle and freshness
 
@@ -81,8 +96,10 @@ Review, promotion, conflict handling, and supersession remain manual. The
 default memory policy accepts reviewed global cards. Project/domain access and
 inbox review require explicit filters.
 
-`ensure-fresh` measures time since the last successful local reconciliation.
-It does not inspect edits after that reconciliation or revalidate upstream facts.
+`ensure-fresh` measures time since the last successful local reconciliation
+and also re-syncs when indexed rows predate the current parser, chunk policy,
+or card validation. It does not inspect edits after that reconciliation or
+revalidate upstream facts.
 Use targeted `sync` for a known edit, and independently verify volatile claims.
 
 SQLite and FTS5 secure deletion require SQLite 3.42.0 or newer. `compact`

@@ -6,6 +6,7 @@ from importlib import metadata
 
 from .config import AppConfig, SourceConfig
 from .database import CHUNKER_VERSION, PARSER_VERSION
+from .extractors import MARKDOWN_HEADING_EXTENSIONS
 
 
 def _package_version(name: str) -> str:
@@ -47,6 +48,14 @@ def legacy_fingerprint(config: AppConfig, source: SourceConfig, pdfium: str, pyp
 
 
 
+def _chunk_policy(config: AppConfig, extension: str) -> str:
+    if extension == ".py" and config.python_chunking == "ast":
+        return "python-ast-v1"
+    # Fence-aware headings re-chunk Markdown-family files only; other text keeps line-v1.
+    # v2: a fence inside a list item also ends with the item.
+    return "markdown-fenced-v2" if extension in MARKDOWN_HEADING_EXTENSIONS else "line-v1"
+
+
 def projection_fingerprint(config: AppConfig, source: SourceConfig, extension: str = ".md") -> str:
     extension = extension.casefold()
     limits = {"chunk_chars": config.chunk_chars, "chunk_overlap_chars": config.chunk_overlap_chars}
@@ -59,7 +68,7 @@ def projection_fingerprint(config: AppConfig, source: SourceConfig, extension: s
     payload = {
         "parser_version": PARSER_VERSION, "chunker_version": CHUNKER_VERSION,
         "extension": extension, "ingestion": limits,
-        "chunk_policy": "python-ast-v1" if extension == ".py" and config.python_chunking == "ast" else "line-v1",
+        "chunk_policy": _chunk_policy(config, extension),
         "extractors": {"pypdfium2": _package_version("pypdfium2"), "pypdf": _package_version("pypdf")} if extension == ".pdf" else {},
         "source_policy": {
             "name": source.name, "path": str(source.path), "enabled": source.enabled, "kind": source.kind,

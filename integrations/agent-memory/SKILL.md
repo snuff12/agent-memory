@@ -58,7 +58,8 @@ vault memories and does not automatically combine candidates. See the installed
 `docs/semantic-pilot.md` or the project's semantic setup documentation.
 
 Use `amem ensure-fresh --collection <name> --max-age-minutes 60` when an age-based
-sync SLA is sufficient. A known edit requires targeted `amem sync`. These commands
+sync SLA is sufficient; it also re-syncs after an engine upgrade that changed
+how a collection is indexed. A known edit requires targeted `amem sync`. These commands
 refresh the local index, not the upstream validity of a claim. Verify current
 official sources when the answer depends on volatile or high-stakes information.
 
@@ -78,7 +79,12 @@ focused synonym/scope retry, report a relevance miss only when you can identify
 an expected path or a short evidence gap. Do not log personal identifiers,
 credentials, or conversations. Gold exports are disabled evaluation candidates.
 
-Use `amem context` only for a bounded multi-document packet. Budget units are
-conservative UTF-8 bytes; 1,200 is a useful starting read budget for mixed
+Use `amem context` only for a bounded multi-document packet. Each block names its
+canonical path and ref before a literal source window; refs that did not fit are
+listed as omitted. Budget units are conservative UTF-8 bytes. Context plans about
+one block per 900 bytes: the default 1,800 gives about two documents, and each
+further document needs about 900 more (`--max-tokens` accepts 256–8,000). Below
+about 1,800 expect a single block; for one known ref prefer
+`amem read '<ref>' --max-bytes 1200`, a useful starting read budget for mixed
 Korean/English text. Operational checks are `amem doctor` and
 `amem status --require-fresh`. Evaluate against the user's own corpus when needed.

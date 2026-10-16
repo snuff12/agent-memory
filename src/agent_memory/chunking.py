@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import Iterator, List, Optional, Sequence, Tuple
 
 from .util import estimate_tokens, normalize_text
 
 
 HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$")
+FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+# A list item marker and the spaces after it; the match ends at the item's content column.
+ITEM_RE = re.compile(r" *(?:[-+*]|\d{1,9}[.)])( {1,4})(?=\S)")
 
 
 @dataclass(frozen=True)
@@ -22,11 +25,47 @@ class ChunkDraft:
     token_estimate: int
 
 
-def discover_title(text: str, fallback: str) -> str:
-    for line in normalize_text(text).splitlines()[:80]:
+def _headings(lines: Sequence[str], fences: bool = True) -> Iterator[Tuple[int, str]]:
+    """Yield ATX headings; with fences, skip CommonMark fenced code blocks.
+
+    A fence opens with three or more backticks or tildes indented by at most
+    three spaces past its container; a backtick info string cannot contain a
+    backtick.  It closes on the same character, at least as long, indented at
+    most three spaces past the container and followed only by spaces or tabs.
+    The container is the document or the list item whose content the fence
+    starts in.  A fence in a list item also ends with the item, at the first
+    non-blank line indented less than the item's content; otherwise an
+    unclosed fence runs to the end of the text.  Lazy continuation lines and
+    other containers, such as block quotes, are approximated.
+    """
+    fence, base, item = "", 0, 0
+    for index, line in enumerate(lines):
+        if fences:
+            indent = len(line) - len(line.lstrip(" "))
+            if fence:
+                if not line.strip() or indent >= base:
+                    marker = FENCE_RE.match(line[base:])
+                    if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence) and not marker.group(2).strip(" \t"):
+                        fence = ""
+                    continue
+                fence = ""  # The list item ended, and its fence with it; read this line as usual.
+            bullet = ITEM_RE.match(line)
+            if bullet and indent <= item + 3:
+                item = bullet.end()
+            elif line.strip() and indent < item:
+                item = 0
+            marker = FENCE_RE.match(line[item:])
+            if marker and not (marker.group(1)[0] == "`" and "`" in marker.group(2)):
+                fence, base = marker.group(1), item
+                continue
         match = HEADING_RE.match(line)
         if match:
-            return match.group(2).strip()[:240]
+            yield index, match.group(2).strip()
+
+
+def discover_title(text: str, fallback: str, fences: bool = False) -> str:
+    for _index, heading in _headings(normalize_text(text).splitlines()[:80], fences):
+        return heading[:240]
     return fallback
 
 
@@ -117,14 +156,11 @@ def chunk_text(
     sections = []
     current_heading = ""
     current_start = 0
-    for index, line in enumerate(lines):
-        match = HEADING_RE.match(line) if markdown_headings else None
-        if match and index > current_start:
+    for index, heading in _headings(lines) if markdown_headings else ():
+        if index > current_start:
             sections.append((current_heading, current_start, index))
-            current_heading = match.group(2).strip()
             current_start = index
-        elif match:
-            current_heading = match.group(2).strip()
+        current_heading = heading
     sections.append((current_heading, current_start, len(lines)))
 
     drafts: List[ChunkDraft] = []

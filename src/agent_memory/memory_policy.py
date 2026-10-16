@@ -12,11 +12,23 @@ from typing import Optional
 import yaml
 
 
-METADATA_VERSION = "1:" + metadata.version("PyYAML")
+METADATA_VERSION = "3:" + metadata.version("PyYAML")
 MAX_FRONTMATTER_BYTES = 16_384
 KINDS = {"fact", "preference", "episode", "procedure", "decision", "concept", "entity", "synthesis"}
 NAVIGATION_NAMES = {"readme.md", "schema.md", "index.md", "log.md"}
 SCOPE_RE = re.compile(r"^(?:global|(?:project|domain):[^\s:]{1,128})$")
+# Misspelling one of these must not silently drop a lifecycle rule. supersedes
+# is spelling-checked and linted by doctor; retrieval does not enforce it.
+LIFECYCLE_KEYS = {"kind", "status", "scope", "sensitivity", "confidence", "source",
+    "valid_from", "review_after", "supersedes"}
+# Spellings are compared without case, spaces, dots, hyphens or underscores
+# ("Review After", "reviewAfter", "review.after"); transposed letters are not caught.
+_LIFECYCLE_COMPACT = {key.replace("_", ""): key for key in LIFECYCLE_KEYS}
+_LIFECYCLE_COMPACT["supersede"] = "supersedes"
+
+
+def _compact_key(key: str) -> str:
+    return re.sub(r"[\s._-]+", "", key).casefold()
 
 
 class _CardLoader(yaml.SafeLoader):
@@ -45,12 +57,14 @@ def _instant(value: object, *, date_only: bool = False) -> Optional[str]:
     elif isinstance(value, date):
         parsed = datetime.combine(value, datetime.min.time(), timezone.utc)
     elif isinstance(value, str):
-        if len(value) == 10:
-            parsed = datetime.combine(date.fromisoformat(value), datetime.min.time(), timezone.utc)
-        elif not date_only:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        else:
+        if date_only and len(value) != 10:
             raise ValueError("review_after must be an ISO date")
+        try:
+            parsed = (datetime.combine(date.fromisoformat(value), datetime.min.time(), timezone.utc)
+                if len(value) == 10 else datetime.fromisoformat(value.replace("Z", "+00:00")))
+        except ValueError:
+            # fromisoformat echoes the rejected value; stored errors carry no card text.
+            raise ValueError("Memory validity must be an ISO date or timestamp") from None
     else:
         raise ValueError("Memory validity must be an ISO date or timestamp")
     if parsed.tzinfo is None:
@@ -59,8 +73,8 @@ def _instant(value: object, *, date_only: bool = False) -> Optional[str]:
 
 
 def parse_memory(path: Path, text: str) -> dict:
-    result = {"entry_type": "invalid", "memory_kind": "", "memory_status": "", "scope": "",
-        "sensitivity": "", "valid_from": None, "review_after": None, "error": "", "version": METADATA_VERSION}
+    result = {"entry_type": "invalid", "memory_kind": "", "memory_status": "", "scope": "", "sensitivity": "",
+        "valid_from": None, "review_after": None, "supersedes": None, "error": "", "version": METADATA_VERSION}
     if not text.startswith("---\n"):
         if path.name.casefold() in NAVIGATION_NAMES:
             result["entry_type"] = "navigation"
@@ -75,6 +89,13 @@ def parse_memory(path: Path, text: str) -> dict:
         raw = yaml.load(text[4:end], Loader=_CardLoader)
         if not isinstance(raw, dict):
             raise ValueError("Memory frontmatter must be a mapping")
+        near_misses = [(key, _LIFECYCLE_COMPACT[_compact_key(key)]) for key in raw
+                       if key not in LIFECYCLE_KEYS and _compact_key(key) in _LIFECYCLE_COMPACT]
+        if near_misses:
+            raise ValueError("Misspelled lifecycle key: " + ", ".join("%s (use %s)" % pair for pair in near_misses))
+        # Retrieval cannot enforce an expiry, so a card that states one is not served as if it held.
+        if any(_compact_key(key) == "validto" for key in raw):
+            raise ValueError("valid_to is not supported; mark the card superseded or set review_after")
         for key, output in (("kind", "memory_kind"), ("status", "memory_status"), ("scope", "scope"), ("sensitivity", "sensitivity")):
             value = raw.get(key, "")
             if not isinstance(value, str) or len(value) > 240:
@@ -95,8 +116,14 @@ def parse_memory(path: Path, text: str) -> dict:
             raise ValueError("Memory source/provenance is required")
         result["valid_from"] = _instant(raw.get("valid_from"))
         result["review_after"] = _instant(raw.get("review_after"), date_only=True)
+        result["supersedes"] = raw.get("supersedes")
         result["entry_type"] = "card"
-    except (yaml.YAMLError, ValueError, TypeError, RecursionError) as exc:
+    except yaml.YAMLError as exc:
+        # PyYAML messages quote the offending frontmatter lines; keep only the position.
+        mark = getattr(exc, "problem_mark", None)
+        result["error"] = "Memory frontmatter is not valid YAML" + (
+            " (line %d, column %d)" % (mark.line + 1, mark.column + 1) if mark is not None else "")
+    except (ValueError, TypeError, RecursionError) as exc:
         result["error"] = str(exc)[:400]
     return result
 
