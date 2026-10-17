@@ -35,6 +35,7 @@ def main() -> None:
         assert json.loads(run("doctor", "--json"))["ok"]
         (home / "knowledge/owner.md").write_text("SyntheticOwner maintains BridgeProject.\n")
         (home / "knowledge/store.md").write_text("BridgeProject persists in SyntheticStore.\n")
+        (home / "knowledge/obsolete.md").write_text("syntheticexcludedneedle evidence\n")
         before = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         run("sync")
         run("status", "--require-fresh")
@@ -72,6 +73,18 @@ def main() -> None:
         assert inbox
         run("read", inbox[0]["ref"], expected=2)
         assert "publicdemoinboxmarker" in run("read", inbox[0]["ref"], "--memory-status", "inbox")
+        feedback = json.loads(run("feedback", "report", "synthetic evidence gap", "--collection", "research",
+                                  "--expected-path", "owner.md", "--json"))
+        reviewed = json.loads(run("feedback", "triage", str(feedback["id"]), "--category", "retrieval_miss",
+                                  "--notes", "Synthetic source exists but the required evidence is absent.", "--json"))
+        assert reviewed["status"] == "open" and not reviewed["needs_triage"]
+        stats = json.loads(run("feedback", "stats", "--json"))
+        assert stats["records"] == 1 and stats["occurrences"] == 1 and stats["open_pending_triage"] == 0
+        assert stats["by_category"][0]["value"] == "retrieval_miss"
+        classified = json.loads(run("feedback", "list", "--category", "retrieval_miss", "--json"))
+        assert classified[0]["id"] == feedback["id"]
+        exported = json.loads(run("feedback", "export", "--format", "review"))
+        assert exported["triage_notes"] == reviewed["triage_notes"]
         messages = [
             {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-11-25"}},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
@@ -99,9 +112,21 @@ def main() -> None:
         for response in responses[5:]:
             assert not response["result"].get("isError", False), response
             assert len(response["result"]["content"][0]["text"].encode("utf-8")) <= 1200
+        config_file = home / "config.json"
+        config = json.loads(config_file.read_text())
+        next(source for source in config["sources"] if source["name"] == "research")["exclude_globs"] = ["obsolete.md"]
+        config_file.write_text(json.dumps(config))
+        preview = json.loads(run("migrate-exclusions", "--collection", "research", "--dry-run"))
+        assert preview["reusable"] >= 4 and preview["excluded"] == 1 and preview["adopted"] == 0
+        reused = json.loads(run("migrate-exclusions", "--collection", "research"))
+        assert reused["adopted"] == preview["reusable"]
+        run("sync", "--collection", "research")
+        run("status", "--require-fresh")
+        assert not json.loads(run("search", "syntheticexcludedneedle", "--collection", "research", "--explain", "--json"))["results"]
+        assert "SyntheticOwner" in run("read", owner["ref"], "--max-tokens", "1200")
         after = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         assert before == after, "Source documents were changed"
-        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, locate/lines/character spans, explanations, eval, inbox policy, stdio MCP, read-only source files")
+        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, locate/lines/character spans, explanations, eval, inbox policy, feedback triage/stats/export, exclusion reuse, stdio MCP, read-only source files")
 
 
 if __name__ == "__main__":

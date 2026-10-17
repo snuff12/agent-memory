@@ -15,22 +15,25 @@ from . import __version__
 from .config import load_config, source_by_name
 from .database import MINIMUM_FTS_SECURE_DELETE_VERSION, connect, trigram_available
 from .feedback import (
+    FAILURE_CATEGORIES,
     MAX_EXPORT_LIMIT,
     MAX_LIST_LIMIT,
     export_failures,
+    feedback_stats,
     list_failures,
     prune_failures,
     record_failure,
     record_zero_result,
     resolve_failure,
     show_failure,
+    triage_failure,
     write_feedback_export,
 )
 from .indexer import ensure_fresh, outdated_document_count, stats_to_dict, sync_all, sync_lock, sync_source
 from .followup import followup_search, format_followup
 from .mcp_server import run_server
 from .memory_policy import METADATA_VERSION, MemoryPolicy, parse_memory
-from .migration import migrate_projections
+from .migration import migrate_exclusions, migrate_projections
 from .search import (
     SearchDiagnostics,
     StaleReferenceError,
@@ -142,6 +145,13 @@ def _parser() -> argparse.ArgumentParser:
     migration.add_argument("--previous-pdfium", required=True)
     migration.add_argument("--previous-pypdf", required=True)
 
+    exclusion_migration = subparsers.add_parser(
+        "migrate-exclusions", help="Reuse unchanged projections after strictly adding exclusion globs; sync is still required."
+    )
+    exclusion_migration.add_argument("--collection", required=True)
+    exclusion_migration.add_argument("--previous-exclude-glob", action="append", default=[])
+    exclusion_migration.add_argument("--dry-run", action="store_true")
+
     feedback_parser = subparsers.add_parser(
         "feedback",
         help="Review explicit relevance misses and opt-in zero-result observations.",
@@ -152,7 +162,21 @@ def _parser() -> argparse.ArgumentParser:
         "--status", choices=("open", "resolved", "ignored", "all"), default="open"
     )
     feedback_list.add_argument("--limit", type=int, default=20)
+    feedback_list.add_argument("--category", choices=FAILURE_CATEGORIES)
     feedback_list.add_argument("--json", action="store_true")
+
+    feedback_stats_parser = feedback_commands.add_parser(
+        "stats", help="Summarize retained failures and pending reviews; not a search failure rate."
+    )
+    feedback_stats_parser.add_argument("--json", action="store_true")
+
+    feedback_triage = feedback_commands.add_parser(
+        "triage", help="Classify one observation with evidence, without closing it."
+    )
+    feedback_triage.add_argument("id", type=int)
+    feedback_triage.add_argument("--category", choices=FAILURE_CATEGORIES, required=True)
+    feedback_triage.add_argument("--notes", required=True, help="Focused evidence and remaining gap; no transcripts.")
+    feedback_triage.add_argument("--json", action="store_true")
 
     feedback_show = feedback_commands.add_parser("show", help="Show one failure record.")
     feedback_show.add_argument("id", type=int)
@@ -622,10 +646,12 @@ def _render_feedback_summary(item: dict) -> str:
     query = str(item.get("query") or "")
     if len(query) > 160:
         query = query[:157] + "..."
-    return "#%d %s %s count=%d collection=%s query=%s" % (
+    return "#%d %s %s category=%s needs_triage=%s count=%d collection=%s query=%s" % (
         item["id"],
         item["status"],
         item["reason"],
+        item["category"],
+        str(item["needs_triage"]).lower(),
         item["count"],
         item.get("collection") or "all",
         query,
@@ -883,6 +909,11 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "migrate-projections":
             print(json_dumps(migrate_projections(config, args.previous_pdfium, args.previous_pypdf), pretty=True))
             return 0
+        if args.command == "migrate-exclusions":
+            print(json_dumps(migrate_exclusions(
+                config, args.collection, args.previous_exclude_glob, dry_run=args.dry_run,
+            ), pretty=True))
+            return 0
         if args.command in {"search", "read", "locate", "context"}:
             policy = MemoryPolicy(args.memory_status, args.project, args.domain, args.shareable_only)
         if args.command == "search":
@@ -945,12 +976,29 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                     raise ValueError(
                         "feedback list limit must be within [1, %d]" % MAX_LIST_LIMIT
                     )
-                items = list_failures(config, status=args.status, limit=args.limit)
+                items = list_failures(config, status=args.status, limit=args.limit, category=args.category)
                 print(
                     json_dumps(items, pretty=True)
                     if args.json
                     else "\n".join(_render_feedback_summary(item) for item in items)
                 )
+                return 0
+            if args.feedback_command == "stats":
+                report = feedback_stats(config)
+                if args.json:
+                    print(json_dumps(report, pretty=True))
+                else:
+                    print("Retained failures: %d records / %d occurrences; open pending triage: %d; open unclassified: %d" % (
+                        report["records"], report["occurrences"], report["open_pending_triage"], report["open_unclassified"]))
+                    for label in ("by_status", "by_reason", "by_category", "by_collection"):
+                        print(label + ": " + ", ".join(
+                            "%s=%d (%d occurrences)" % (group["value"] or "all", group["records"], group["occurrences"])
+                            for group in report[label]))
+                    print(report["coverage"])
+                return 0
+            if args.feedback_command == "triage":
+                item = triage_failure(config, args.id, category=args.category, notes=args.notes)
+                print(json_dumps(item, pretty=True) if args.json else _render_feedback_summary(item))
                 return 0
             if args.feedback_command == "show":
                 item = show_failure(config, args.id)

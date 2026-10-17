@@ -34,9 +34,12 @@ MAX_EXPORT_LIMIT = 1_000
 FAILURE_REASONS = ("zero_results", "relevance_miss")
 FAILURE_STATUSES = ("open", "resolved", "ignored")
 FAILURE_ORIGINS = ("cli_search", "mcp_search", "explicit")
+FAILURE_CATEGORIES = (
+    "unclassified", "corpus_gap", "scope_mismatch", "retrieval_miss", "source_unavailable",
+)
 EXPORT_SCHEMA = "agent-memory.feedback.v1"
-FEEDBACK_SCHEMA_VERSION = "2"
-READABLE_FEEDBACK_SCHEMA_VERSIONS = ("1", FEEDBACK_SCHEMA_VERSION)
+FEEDBACK_SCHEMA_VERSION = "3"
+READABLE_FEEDBACK_SCHEMA_VERSIONS = ("1", "2", FEEDBACK_SCHEMA_VERSION)
 
 
 _CREDENTIAL_ASSIGNMENT_RE = re.compile(
@@ -340,7 +343,36 @@ def _migrate_feedback_v1_to_v2(connection: sqlite3.Connection) -> None:
         connection.execute("DROP TABLE retrieval_failures_v1")
         connection.execute(
             "UPDATE metadata SET value=? WHERE key='schema_version'",
-            (FEEDBACK_SCHEMA_VERSION,),
+            ("2",),
+        )
+        connection.commit()
+    except BaseException:
+        connection.rollback()
+        raise
+
+
+def _add_triage_columns(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        "ALTER TABLE retrieval_failures ADD COLUMN category TEXT NOT NULL DEFAULT 'unclassified' "
+        "CHECK(category IN ('unclassified','corpus_gap','scope_mismatch','retrieval_miss','source_unavailable'))"
+    )
+    connection.execute(
+        "ALTER TABLE retrieval_failures ADD COLUMN triage_notes TEXT "
+        "CHECK(triage_notes IS NULL OR length(triage_notes) <= 2000)"
+    )
+    connection.execute("ALTER TABLE retrieval_failures ADD COLUMN triaged_at TEXT")
+    connection.execute(
+        "ALTER TABLE retrieval_failures ADD COLUMN triaged_count INTEGER NOT NULL DEFAULT 0 "
+        "CHECK(triaged_count >= 0 AND triaged_count <= count)"
+    )
+
+
+def _migrate_feedback_v2_to_v3(connection: sqlite3.Connection) -> None:
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        _add_triage_columns(connection)
+        connection.execute(
+            "UPDATE metadata SET value=? WHERE key='schema_version'", (FEEDBACK_SCHEMA_VERSION,)
         )
         connection.commit()
     except BaseException:
@@ -427,6 +459,7 @@ def _connect_feedback_writable(database: Path) -> sqlite3.Connection:
                     "CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
                 )
                 _create_feedback_queue_v2(connection)
+                _add_triage_columns(connection)
                 connection.execute(
                     "INSERT INTO metadata(key, value) VALUES('schema_version', ?)",
                     (FEEDBACK_SCHEMA_VERSION,),
@@ -442,6 +475,9 @@ def _connect_feedback_writable(database: Path) -> sqlite3.Connection:
             version = _validate_feedback_schema(connection)
             if version == "1":
                 _migrate_feedback_v1_to_v2(connection)
+                version = "2"
+            if version == "2":
+                _migrate_feedback_v2_to_v3(connection)
             _validate_feedback_schema(connection, require_current=True)
         _chmod_feedback_files(database)
         return connection
@@ -680,6 +716,9 @@ def record_zero_result(
 
 def _row_dict(row, *, summary: bool = False) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
     display = row["query_text"] if row["query_text"] is not None else row["query_redacted"]
+    has_triage = "category" in row.keys()
+    triaged_at = row["triaged_at"] if has_triage else None
+    triaged_count = int(row["triaged_count"]) if has_triage else 0
     result: Dict[str, Any] = {
         "id": int(row["id"]),
         "query": display,
@@ -691,6 +730,10 @@ def _row_dict(row, *, summary: bool = False) -> Dict[str, Any]:  # type: ignore[
         "last_seen": row["last_seen"],
         "status": row["status"],
         "origin": row["origin"],
+        "category": row["category"] if has_triage else "unclassified",
+        "triaged_at": triaged_at,
+        "triaged_count": triaged_count,
+        "needs_triage": triaged_at is None or triaged_count < int(row["count"]),
     }
     if summary:
         result["fingerprint"] = str(row["fingerprint"])[:12]
@@ -702,6 +745,7 @@ def _row_dict(row, *, summary: bool = False) -> Dict[str, Any]:  # type: ignore[
                 "notes": row["notes"],
                 "resolved_at": row["resolved_at"],
                 "resolution_notes": row["resolution_notes"],
+                "triage_notes": row["triage_notes"] if has_triage else None,
             }
         )
     return result
@@ -712,28 +756,102 @@ def list_failures(
     *,
     status: str = "open",
     limit: int = 20,
+    category: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     if status != "all":
         _validate_enum(status, "feedback status", FAILURE_STATUSES)
     if not 1 <= limit <= MAX_LIST_LIMIT:
         raise ValueError("feedback list limit must be within [1, %d]" % MAX_LIST_LIMIT)
+    if category is not None:
+        _validate_enum(category, "feedback category", FAILURE_CATEGORIES)
     try:
         connection = _connect_feedback(config, readonly=True)
     except FileNotFoundError:
         return []
     try:
-        if status == "all":
-            rows = connection.execute(
-                "SELECT * FROM retrieval_failures ORDER BY last_seen DESC, id DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-        else:
-            rows = connection.execute(
-                "SELECT * FROM retrieval_failures WHERE status=? "
-                "ORDER BY last_seen DESC, id DESC LIMIT ?",
-                (status, limit),
-            ).fetchall()
+        clauses: List[str] = []
+        params: List[Any] = []
+        if status != "all":
+            clauses.append("status=?")
+            params.append(status)
+        if category is not None:
+            current = _validate_feedback_schema(connection) == FEEDBACK_SCHEMA_VERSION
+            clauses.append("category=?" if current else "'unclassified'=?")
+            params.append(category)
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        rows = connection.execute(
+            "SELECT * FROM retrieval_failures" + where + " ORDER BY last_seen DESC, id DESC LIMIT ?",
+            tuple(params + [limit]),
+        ).fetchall()
         return [_row_dict(row, summary=True) for row in rows]
+    finally:
+        connection.close()
+
+
+def feedback_stats(config: AppConfig) -> Dict[str, Any]:
+    """Summarize retained observations, never an inferred search failure rate."""
+    result: Dict[str, Any] = {
+        "records": 0, "occurrences": 0, "open_pending_triage": 0, "open_unclassified": 0,
+        "first_seen": None, "last_seen": None,
+        "by_status": [], "by_reason": [], "by_category": [], "by_collection": [],
+        "coverage": "Retained failures only; successful searches and task outcomes are not logged.",
+    }
+    try:
+        connection = _connect_feedback(config, readonly=True)
+    except FileNotFoundError:
+        return result
+    try:
+        # Keep every group in one read snapshot if a search writes concurrently.
+        connection.execute("BEGIN")
+        current = _validate_feedback_schema(connection) == FEEDBACK_SCHEMA_VERSION
+        triage_pending = "(triaged_at IS NULL OR triaged_count < count)" if current else "1"
+        unclassified = "category='unclassified'" if current else "1"
+        row = connection.execute(
+            "SELECT COUNT(*) records, COALESCE(SUM(count),0) occurrences, "
+            "COALESCE(SUM(status='open' AND " + triage_pending + "),0) open_pending_triage, "
+            "COALESCE(SUM(status='open' AND " + unclassified + "),0) open_unclassified, "
+            "MIN(first_seen) first_seen, MAX(last_seen) last_seen FROM retrieval_failures"
+        ).fetchone()
+        result.update(dict(row))
+        for name, column in (
+            ("by_status", "status"), ("by_reason", "reason"),
+            ("by_category", "category" if current else "'unclassified'"),
+            ("by_collection", "collection_name"),
+        ):
+            result[name] = [dict(row) for row in connection.execute(
+                "SELECT " + column + " value, COUNT(*) records, SUM(count) occurrences "
+                "FROM retrieval_failures GROUP BY " + column + " ORDER BY records DESC, value"
+            )]
+        return result
+    finally:
+        connection.close()
+
+
+def triage_failure(
+    config: AppConfig, failure_id: int, *, category: str, notes: str,
+) -> Dict[str, Any]:
+    """Store an evidence-based review without closing or re-running a search."""
+    if failure_id < 1:
+        raise ValueError("feedback id must be positive")
+    _validate_enum(category, "feedback category", FAILURE_CATEGORIES)
+    safe_notes = _bounded(notes, "triage notes", MAX_NOTES_CHARS)
+    if not safe_notes:
+        raise ValueError("feedback triage requires nonempty evidence notes")
+    # Check existence before opening a writer or migrating a legacy queue.
+    observed_count = show_failure(config, failure_id)["count"]
+    connection = _connect_feedback(config)
+    try:
+        with _writer_transaction(connection):
+            cursor = connection.execute(
+                "UPDATE retrieval_failures SET category=?, triage_notes=?, triaged_at=?, "
+                "triaged_count=? WHERE id=?", (category, safe_notes, utc_now(), observed_count, failure_id),
+            )
+            if cursor.rowcount != 1:
+                raise KeyError("Unknown feedback id: %d" % failure_id)
+            row = connection.execute(
+                "SELECT * FROM retrieval_failures WHERE id=?", (failure_id,)
+            ).fetchone()
+        return _row_dict(row)
     finally:
         connection.close()
 

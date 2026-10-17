@@ -78,6 +78,17 @@ Zero-result feedback is recorded only if the local config opts in. After one
 focused synonym/scope retry, report a relevance miss only when you can identify
 an expected path or a short evidence gap. Do not log personal identifiers,
 credentials, or conversations. Gold exports are disabled evaluation candidates.
+Use `amem feedback report '<query>' --collection <name> --expected-path '<path>'`
+or `--notes '<focused gap>'`; results that exist but cannot support the task
+also qualify after the retry. Do not report an expected corpus gap as a search
+defect. When reviewing existing feedback, use `amem feedback stats` and
+`amem feedback triage ID --category CATEGORY --notes '<verified evidence>'`.
+Categories: `corpus_gap`, `scope_mismatch`, `retrieval_miss`,
+`source_unavailable`, or `unclassified` when evidence is insufficient. Triage
+does not resolve an issue; recurrence preserves the review and marks it for
+another review. Resolve only after checking the requested source evidence.
+Stats count retained failures, not overall search failure rates. See the
+installed `docs/agent-contract.md` for the review and migration rules.
 
 Use `amem context` only for a bounded multi-document packet. Each block names its
 canonical path and ref before a literal source window; refs that did not fit are

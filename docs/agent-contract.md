@@ -73,6 +73,19 @@ card validation.
 Use targeted `sync` when a known file edit must appear immediately. Local sync
 does not revalidate an upstream website or renew an expired factual claim.
 
+After strictly adding `exclude_globs`, an operator may reuse byte-identical
+projections with `migrate-exclusions --collection NAME`, repeating
+`--previous-exclude-glob '<old pattern>'` for each old pattern in its original
+order. Omit that option when the old list was empty. Preview with `--dry-run`.
+The old projection fingerprint must match when reconstructed with that list;
+all other parser, package, chunk, source-root and policy settings must match.
+Every reused file must still be allowed, readable, and unchanged in path, size,
+mtime and SHA-256. Current memory-card validation is also required. Reuse keeps
+evidence, locators, generations and FTS rows, but marks the collection as needing
+sync. Run targeted `sync` afterward to remove excluded rows and establish
+freshness; rejected documents take the normal extraction path. Upstream factual
+claims still need separate verification.
+
 Read and locate use `--max-bytes`; legacy `--max-tokens` on reads is an alias
 for the same UTF-8 byte budget. Search/context also measure UTF-8 bytes. Plain CLI search is
 capped at 4,000 units; MCP search is capped at 6,000. Read uses 1,200 by default
@@ -96,6 +109,28 @@ zero-result feedback is enabled.
 When reporting a relevance miss, name an expected path or a focused gap. Do not
 put credentials, personal identifiers, or transcripts into feedback. Redaction
 is a best-effort filter, not a guarantee that arbitrary sensitive text is safe.
+
+Use `feedback stats` to review retained failures by reason, collection, status,
+and reviewed category. These are observations, not a failure rate: successful
+queries and final task outcomes have no denominator in this queue. `feedback
+list --category unclassified` selects observations that have no cause assigned.
+After checking the expected source, record a focused review with
+`feedback triage ID --category CATEGORY --notes '<evidence and remaining gap>'`.
+Categories are `corpus_gap` (needed material is not in the configured corpus),
+`scope_mismatch` (a different collection or memory policy is needed),
+`retrieval_miss` (eligible current evidence was missed), `source_unavailable`
+(missing, changed, or unextractable source), and `unclassified` (not enough
+evidence). Do not infer the cause from zero results alone or widen scope to
+classify it. Review stores the latest note and observed count without closing
+the issue. A later occurrence preserves that note and marks `needs_triage=true`.
+Close with `feedback resolve ID --notes '<verified outcome>'` only after
+checking the requested evidence; use `--status ignored` for a confirmed
+out-of-scope observation. Do not close a relevance miss just because some
+unrelated result now appears. Queue schema upgrades occur on a write; stats,
+list, show, and export can read older queues without migrating them.
+The first write upgrades an older queue to schema v3. Older engine releases
+cannot read that schema; update all writers and restart long-running MCP
+servers when upgrading, so their feedback writes use the current engine.
 
 Operational checks are `amem doctor`, `amem status --require-fresh`, and an
 evaluation set suited to the local corpus. Run `compact` after index erasure

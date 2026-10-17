@@ -61,7 +61,7 @@ or memory concepts were invented here.
 | Memory policy | Review status, project/domain scope, sensitivity, and validity are checked before limiting candidates and again during reads. Capture creates inbox candidates; promotion is manual. |
 | Incremental ingestion | Reconcile configured collections without modifying sources. Support multiple document formats and optional Python AST chunking; extraction versions apply to affected file types, and a chunking or extraction policy change hides those file types until the next `amem sync`. |
 | Freshness and storage | Separate local sync age from upstream fact validity; preserve unvisited records after incomplete scans. Use owner-only state, SQLite/FTS secure deletion, and active-index compaction. |
-| Retrieval feedback | Opt-in zero-result records and explicit relevance misses use deduplication, bounded retention, and best-effort secret redaction. Evaluation exports remain disabled candidates. |
+| Retrieval feedback | Opt-in failures and explicit relevance misses support cause classification, evidence notes, retained-record statistics, and review on recurrence. Deduplication, bounded retention, and best-effort secret redaction apply. Evaluation exports remain disabled candidates. |
 | Shared interfaces | One CLI and agent skill support multiple clients. The optional stdio MCP exposes catalog, search, fetch, and locate. Semantic candidates require explicit opt-in. |
 
 ### Added for this public release

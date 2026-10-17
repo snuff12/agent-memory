@@ -95,6 +95,56 @@ amem read '<현재 ref>' --project demo --memory-status all --query retention
 않습니다. 원본을 확인하고 충돌을 수동 검토합니다. 조회만으로 기억을 합치거나
 수정·대체·승격하지 않습니다.
 
+## 검색 실패를 검토하고 개선 확인하기
+
+결과가 나와도 필요한 근거를 확인하지 못했다면, 표현·범위를 한 번 좁혀 다시
+검색한 뒤 기대한 원본이나 구체적인 빈틈을 보고합니다. 로컬 자료에 없을 것으로
+예상한 질문이나 최신 웹 확인이 필요하다는 이유만으로 검색 결함을 보고하지 않습니다.
+
+```bash
+amem feedback report '예시 정책의 예외 조건' --collection research --expected-path 'policy.md'
+amem feedback stats
+amem feedback list --category unclassified
+amem feedback triage 1 --category retrieval_miss --notes '허용된 최신 policy.md에 예외가 있지만 재검색 후에도 찾지 못함'
+```
+
+| 분류 | 확인한 원인 |
+|---|---|
+| `corpus_gap` | 필요한 자료가 설정된 검색 대상에 없음 |
+| `scope_mismatch` | 다른 컬렉션·프로젝트·기억 상태를 조회해야 함 |
+| `retrieval_miss` | 검색 가능한 최신 근거가 있지만 찾지 못함 |
+| `source_unavailable` | 원본 누락·변경·추출 오류로 사용할 수 없음 |
+| `unclassified` | 원인을 판단할 근거가 아직 부족함 |
+
+분류는 최신 검토 메모·시간·당시 발생 횟수를 저장하며 항목을 닫지 않습니다.
+재발하면 메모를 보존하고 `needs_triage=true`로 다시 검토를 요청합니다.
+원래 필요했던 근거까지 확인한 뒤 `amem feedback resolve 1 --notes '확인 결과'`로
+닫습니다. 범위 밖 질문임을 확인했다면 `--status ignored`를 사용합니다.
+현재 상태를 근거로 과거 실패 원인까지 확정하거나, 결과가 하나 나왔다는 이유로
+관련성 문제를 해결 처리하지 않습니다.
+
+집계는 보존된 실패만 셉니다. 성공 검색과 최종 작업 결과는 저장하지 않으므로
+전체 실패율이 아닙니다. 통계·조회·내보내기는 이전 DB를 읽기만 하며, 스키마
+변경은 다음 쓰기 때 적용됩니다. 대화·비밀정보·개인 식별자는 보고에 넣지 않습니다.
+
+## 제외 규칙을 추가한 뒤 투영 재사용하기
+
+`exclude_globs`만 추가했다면, 원본과 처리 설정이 같은 문서를 재추출하지 않고
+검증 후 재사용할 수 있습니다. 변경 전 패턴을 원래 순서대로 전달합니다.
+변경 전 목록이 비었다면 `--previous-exclude-glob`을 생략합니다.
+
+```bash
+amem migrate-exclusions --collection research --previous-exclude-glob 'old/*' --dry-run
+amem migrate-exclusions --collection research --previous-exclude-glob 'old/*'
+amem sync --collection research
+amem status --require-fresh
+```
+
+이전 패턴으로 계산한 투영 버전과 현재 원본의 경로·크기·수정 시각·SHA-256이
+모두 맞아야 합니다. 추출기·분할 설정·다른 접근 정책이 달라졌거나 원본이 바뀌면
+일반 재색인을 요구합니다. 새로 제외된 파일은 재사용하지 않습니다. 재사용만으로
+최신 상태라고 표시하지 않으며, 마지막 동기화가 제외 행 제거와 상태 확인을 합니다.
+
 ## 검증과 남은 범위
 
 `tests/test_practical_retrieval.py`는 긴 질문 뒤의 파일명·식별자로 실제 원문을

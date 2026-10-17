@@ -17,13 +17,16 @@ from unittest.mock import patch
 from agent_memory.cli import _evaluate, main
 from agent_memory.config import load_config
 from agent_memory.feedback import (
+    FEEDBACK_SCHEMA_VERSION,
     export_failures,
+    feedback_stats,
     list_failures,
     prune_failures,
     record_failure,
     record_zero_result,
     resolve_failure,
     show_failure,
+    triage_failure,
 )
 from agent_memory.indexer import sync_all
 from agent_memory.mcp_server import handle_request
@@ -617,7 +620,7 @@ class FeedbackTests(unittest.TestCase):
             raw = sqlite3.connect(str(database))
             self.assertEqual(
                 raw.execute("SELECT value FROM metadata WHERE key='schema_version'").fetchone()[0],
-                "2",
+                FEEDBACK_SCHEMA_VERSION,
             )
             schema_sql = raw.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='retrieval_failures'"
@@ -629,6 +632,127 @@ class FeedbackTests(unittest.TestCase):
                     (legacy_id,),
                 )
             raw.close()
+
+    def test_stats_and_triage_expose_repeat_without_implicitly_resolving(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = make_feedback_home(Path(temporary))
+            config = load_config(home)
+            self.assertEqual(feedback_stats(config)["records"], 0)
+            self.assertFalse((home / "feedback").exists())
+            failure_id = record_zero_result(config, "missing evidence", collection="test", origin="cli_search")
+            reviewed = triage_failure(config, failure_id, category="corpus_gap", notes="Expected source is outside the configured root.")
+            self.assertEqual(reviewed["status"], "open")
+            self.assertFalse(reviewed["needs_triage"])
+            self.assertEqual(feedback_stats(config)["open_pending_triage"], 0)
+            resolve_failure(config, failure_id, status="ignored", notes="No indexed evidence was expected.")
+            record_zero_result(config, "missing evidence", collection="test", origin="cli_search")
+            repeated = show_failure(config, failure_id)
+            self.assertEqual(repeated["status"], "open")
+            self.assertEqual(repeated["category"], "corpus_gap")
+            self.assertEqual(repeated["triage_notes"], reviewed["triage_notes"])
+            self.assertTrue(repeated["needs_triage"])
+            self.assertEqual(repeated["triaged_count"], 1)
+            report = feedback_stats(config)
+            self.assertEqual((report["records"], report["occurrences"], report["open_pending_triage"]), (1, 2, 1))
+            self.assertNotIn("failure_rate", report)
+            self.assertNotIn("missing evidence", json.dumps(report))
+            self.assertEqual(len(list_failures(config, category="corpus_gap")), 1)
+            self.assertEqual(list_failures(config, category="retrieval_miss"), [])
+
+    def test_triage_rejects_empty_evidence_and_redacts_sensitive_notes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = make_feedback_home(Path(temporary))
+            config = load_config(home)
+            with self.assertRaises(KeyError):
+                triage_failure(config, 99, category="unclassified", notes="Needs source evidence.")
+            self.assertFalse((home / "feedback").exists())
+            failure_id = record_zero_result(config, "unknown source", collection="test", origin="cli_search")
+            for category, notes in (("other", "evidence"), ("corpus_gap", "  ")):
+                with self.assertRaises(ValueError):
+                    triage_failure(config, failure_id, category=category, notes=notes)
+            secret = "owner@example.com"
+            item = triage_failure(config, failure_id, category="unclassified", notes="Ask " + secret)
+            self.assertIn("REDACTED", item["triage_notes"])
+            self.assertNotIn(secret.encode(), (home / "feedback/query_failures.sqlite3").read_bytes())
+
+    def test_recurrence_between_observation_and_triage_write_still_needs_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = make_feedback_home(Path(temporary))
+            config = load_config(home)
+            failure_id = record_zero_result(config, "recurring evidence gap", collection="test", origin="cli_search")
+
+            def observe_then_recur(*args, **kwargs):
+                observed = show_failure(*args, **kwargs)
+                record_zero_result(config, "recurring evidence gap", collection="test", origin="cli_search")
+                return observed
+
+            with patch("agent_memory.feedback.show_failure", side_effect=observe_then_recur):
+                item = triage_failure(config, failure_id, category="corpus_gap", notes="Reviewed the first observation.")
+            self.assertEqual(item["count"], 2)
+            self.assertEqual(item["triaged_count"], 1)
+            self.assertTrue(item["needs_triage"])
+            self.assertEqual(feedback_stats(config)["open_pending_triage"], 1)
+
+    def test_v2_review_is_readonly_and_write_migrates_without_losing_observations(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = make_feedback_home(Path(temporary))
+            config = load_config(home)
+            failure_id = record_failure(config, "legacy observation", reason="relevance_miss", collection="test", origin="explicit", expected_path="known.md")
+            database = home / "feedback/query_failures.sqlite3"
+            raw = sqlite3.connect(str(database))
+            for column in ("triaged_count", "triaged_at", "triage_notes", "category"):
+                raw.execute("ALTER TABLE retrieval_failures DROP COLUMN " + column)
+            raw.execute("UPDATE metadata SET value='2' WHERE key='schema_version'")
+            raw.commit()
+            raw.close()
+            before = database.read_bytes(), database.stat().st_mtime_ns
+            legacy = show_failure(config, failure_id)
+            self.assertTrue(legacy["needs_triage"])
+            self.assertEqual(feedback_stats(config)["open_pending_triage"], 1)
+            self.assertEqual(feedback_stats(config)["open_unclassified"], 1)
+            self.assertEqual(len(list_failures(config, category="unclassified")), 1)
+            self.assertEqual(list_failures(config, category="retrieval_miss"), [])
+            self.assertIn("unclassified", export_failures(config, export_format="review", status="open", limit=10))
+            self.assertEqual((database.read_bytes(), database.stat().st_mtime_ns), before)
+
+            from agent_memory.feedback import _add_triage_columns
+            def interrupted_migration(connection):  # type: ignore[no-untyped-def]
+                _add_triage_columns(connection)
+                raise RuntimeError("synthetic interrupted migration")
+            with patch("agent_memory.feedback._add_triage_columns", interrupted_migration):
+                with self.assertRaises(RuntimeError):
+                    triage_failure(config, failure_id, category="retrieval_miss", notes="Expected source is indexed.")
+            self.assertEqual(show_failure(config, failure_id)["fingerprint"], legacy["fingerprint"])
+            self.assertEqual(feedback_stats(config)["open_pending_triage"], 1)
+
+            triaged = triage_failure(config, failure_id, category="retrieval_miss", notes="Expected source is indexed.")
+            for key in ("id", "fingerprint", "query", "expected_path", "first_seen", "last_seen", "count", "status"):
+                self.assertEqual(triaged[key], legacy[key])
+            raw = sqlite3.connect(str(database))
+            self.assertEqual(raw.execute("SELECT value FROM metadata WHERE key='schema_version'").fetchone()[0], FEEDBACK_SCHEMA_VERSION)
+            raw.close()
+            snapshot = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in database.parent.iterdir()}
+            feedback_stats(config)
+            list_failures(config, category="retrieval_miss")
+            self.assertEqual(snapshot, {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in database.parent.iterdir()})
+
+    def test_cli_feedback_review_workflow_and_export_keep_classification(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = make_feedback_home(Path(temporary))
+            prefix = ["--home", str(home), "feedback"]
+            reported = run_main(prefix + ["report", "unhelpful results", "--expected-path", "known.md", "--json"])
+            failure_id = json.loads(reported[1])["id"]
+            triaged = run_main(prefix + ["triage", str(failure_id), "--category", "retrieval_miss", "--notes", "Known source absent after a focused retry.", "--json"])
+            self.assertEqual(triaged[0], 0, triaged[2])
+            self.assertFalse(json.loads(triaged[1])["needs_triage"])
+            listed = run_main(prefix + ["list", "--category", "retrieval_miss", "--json"])
+            self.assertEqual(json.loads(listed[1])[0]["id"], failure_id)
+            stats = run_main(prefix + ["stats", "--json"])
+            self.assertEqual(json.loads(stats[1])["by_category"][0]["value"], "retrieval_miss")
+            plain = run_main(prefix + ["stats"])
+            self.assertIn("successful searches", plain[1])
+            exported = run_main(prefix + ["export", "--format", "review"])
+            self.assertEqual(json.loads(exported[1])["category"], "retrieval_miss")
 
     def test_feedback_config_requires_strict_types_and_bounds(self) -> None:
         invalid_feedback = [
