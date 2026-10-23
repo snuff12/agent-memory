@@ -53,6 +53,13 @@ Collection and reviewed-memory filters apply before result limits. Fetch checks
 the generation, file hash, current source policy, and memory policy again.
 Deleted or changed sources cannot be read with old references.
 
+When rejected candidates underfill a search and a channel reaches its limit,
+the engine refills under the same SQLite snapshot and memory policy, up to three
+rounds and 640 candidates per channel. Source validation is cached only within
+that request; reads still validate again. Diagnostics identify an exhausted
+refill budget. Identical channel SQL results share one query while retaining
+their separate RRF votes, and candidate rows are fetched in bounded batches.
+
 The document parser supports text, code, HTML, PDF, and selected Office/XML
 formats. Archive expansion has a size limit. Extraction does not include OCR.
 Optional Python AST chunking groups functions and classes when it can do so

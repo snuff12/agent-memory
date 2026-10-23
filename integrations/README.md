@@ -58,6 +58,14 @@ for host approval policies. If `feedback.auto_record_zero_results` is enabled,
 private feedback row. Use MCP when the host needs structured calls; the CLI
 skill is sufficient for agents with shell access.
 
+The MCP server rereads its private `config.json` before each tool call/list.
+Disabled sources and changed exclusion/root policies therefore apply to the
+next request, including existing refs. Missing or invalid configuration blocks
+tools until repaired; the server does not fall back to its startup policy.
+Changing `feedback.auto_record_zero_results` requires an MCP restart so the
+host receives matching read-only/write annotations. Installing new engine code
+also requires restarting existing MCP processes.
+
 ## Optional macOS schedule
 
 The launcher wrapper in `launchd/run-incremental-sync` derives the checkout

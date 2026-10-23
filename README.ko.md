@@ -166,6 +166,13 @@ HippoRAG 2, Graphiti, Mem0 OSS, Letta Code와 SCIP Python을 합성 자료·공�
 반영하지 않습니다. [실사용 중심 검토](docs/practical-memory-review.ko.md)에 근거와
 다음 검증 대상을 정리했습니다.
 
+`amem eval`에 `required_paths`를 지정하면 필수 문서를 모두 찾아야 통과합니다.
+`required_evidence`는 반환된 순서대로 최대 세 구간을 읽어 본문 안의 근거 문장을
+확인합니다. 기존 `relevant_paths`의 ‘하나 이상 일치’ 판정은 유지됩니다.
+[설정 예제와 판정 기준](docs/agent-contract.md#evidence-aware-evaluation)을 참고하세요.
+`search --explain`은 검색 범위 상태, 후보 보충 한도, 검색 경로별 SQL 시간도 보여줍니다.
+MCP는 요청마다 설정을 다시 읽으며, 실패 기록 활성화 설정을 바꾸면 재시작이 필요합니다.
+
 ```bash
 .venv/bin/python -m unittest discover -s tests -t .
 .venv/bin/python scripts/check_public_tree.py

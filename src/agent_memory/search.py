@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import time
 from bisect import bisect_left, bisect_right
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -86,6 +87,13 @@ class SearchDiagnostics:
     returned: int = 0
     policy: Dict[str, object] = field(default_factory=dict)
     collection: Optional[str] = None
+    collection_state: str = "all_enabled"
+    rounds: int = 0
+    candidate_limit: int = 0
+    saturated_channels: List[str] = field(default_factory=list)
+    refill_exhausted: bool = False
+    channel_ms: Dict[str, float] = field(default_factory=dict)
+    total_ms: float = 0.0
 
 
 class StaleReferenceError(RuntimeError):
@@ -241,6 +249,10 @@ def _snippet(text: str, terms: List[str], max_chars: int) -> str:
     return ("…" if start else "") + piece + ("…" if end < len(normalized) else "")
 
 
+MAX_SEARCH_CANDIDATES = 640
+MAX_SEARCH_ROUNDS = 3
+
+
 def search(
     config: AppConfig,
     query: str,
@@ -250,271 +262,324 @@ def search(
     policy: Optional[MemoryPolicy] = None,
     diagnostics: Optional[SearchDiagnostics] = None,
 ) -> List[SearchHit]:
+    started = time.perf_counter()
     terms, omitted = _query_plan(query)
     trace = diagnostics if diagnostics is not None else SearchDiagnostics()
-    # Reusing an explicit diagnostics object must not retain an earlier query.
     trace.__dict__.update(SearchDiagnostics().__dict__)
     trace.selected_terms = terms
     trace.omitted_terms, trace.omitted_count = omitted[:12], len(omitted)
     trace.collection = collection
     trace.policy = asdict(policy or MemoryPolicy())
+    if collection is not None:
+        source = next((item for item in config.sources if item.name == collection), None)
+        trace.collection_state = "unknown" if source is None else "enabled" if source.enabled else "disabled"
+        if trace.collection_state != "enabled":
+            return []
     if not terms:
         return []
     wanted = max(1, min(int(limit or config.default_results), 20))
-    candidate_limit = max(40, wanted * candidate_multiplier)
+    candidate_limit = min(MAX_SEARCH_CANDIDATES, max(40, wanted * candidate_multiplier))
     connection = connect(config, readonly=True)
-    scores: Dict[str, float] = {}
     try:
         eligible_documents(connection, policy)
         connection.execute("BEGIN")
-        fts_query = _fts_query(terms)
-        fts_collection_clause = " AND d.collection_name=?" if collection else ""
-        fts_params: List[object] = [fts_query]
-        if collection:
-            fts_params.append(collection)
-        fts_params.append(candidate_limit)
-        # Channels break ties by chunk id, not rowid. Rowids record index
-        # history: a file edited and restored is reinserted last.
-        try:
-            rows = connection.execute(
-                "SELECT chunks_fts.chunk_id, bm25(chunks_fts, 0.1, 0.4, 0.5, 0.4, 1.0) AS relevance "
-                "FROM chunks_fts "
-                "JOIN chunks c ON c.id=chunks_fts.chunk_id "
-                "JOIN eligible_documents d ON d.id=c.document_id "
-                "WHERE chunks_fts MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
-                tuple(fts_params),
-            ).fetchall()
-        except sqlite3.OperationalError:
-            rows = []
-            trace.channel_errors.append("word")
-        trace.channels["word"] = len(rows)
-        for rank, row in enumerate(rows, 1):
-            scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
-
-        # Keeping an explicit symbol in a long OR query is not sufficient:
-        # boilerplate can still outrank its definition/call site. Retrieve the
-        # named evidence in its own bounded body channel, under the same policy.
-        anchors = _explicit_terms(query, terms)
-        explicit_body_ids: List[str] = []
-        trace.channels["explicit_body"] = 0
-        if anchors:
-            anchor_params: List[object] = [_fts_query(anchors, prefix=False)]
-            if collection:
-                anchor_params.append(collection)
-            anchor_params.append(candidate_limit)
-            try:
-                anchor_rows = connection.execute(
-                    "SELECT chunks_fts.chunk_id, c.text, bm25(chunks_fts) AS relevance "
-                    "FROM chunks_fts JOIN chunks c ON c.id=chunks_fts.chunk_id "
-                    "JOIN eligible_documents d ON d.id=c.document_id "
-                    "WHERE chunks_fts.body MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
-                    tuple(anchor_params),
-                ).fetchall()
-            except sqlite3.OperationalError:
-                anchor_rows = []
-                trace.channel_errors.append("explicit_body")
-            anchor_rows = [row for row in anchor_rows if any(term in normalize_text(row["text"]).casefold() for term in anchors)]
-            explicit_body_ids = [row["chunk_id"] for row in anchor_rows]
-            trace.channels["explicit_body"] = len(anchor_rows)
-            for rank, row in enumerate(anchor_rows, 1):
-                scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
-
-        trace.trigram_available = trigram_available(connection)
-        if trace.trigram_available:
-            tri_terms = [term for term in terms if len(term) >= 3]
-            if tri_terms:
-                tri_query = _fts_query(tri_terms, prefix=False)
-                compact_query = _fts_query(["".join(normalize_text(query).split())], prefix=False)
-                for name, current_query, weight in (("trigram", tri_query, 0.9), ("compact", compact_query, 0.65)):
-                    tri_params: List[object] = [current_query]
-                    if collection:
-                        tri_params.append(collection)
-                    tri_params.append(candidate_limit)
-                    try:
-                        tri_rows = connection.execute(
-                            "SELECT chunks_trigram.chunk_id, bm25(chunks_trigram) AS relevance "
-                            "FROM chunks_trigram "
-                            "JOIN chunks c ON c.id=chunks_trigram.chunk_id "
-                            "JOIN eligible_documents d ON d.id=c.document_id "
-                            "WHERE chunks_trigram MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
-                            tuple(tri_params),
-                        ).fetchall()
-                    except sqlite3.OperationalError:
-                        tri_rows = []
-                        trace.channel_errors.append(name)
-                    trace.channels[name] = len(tri_rows)
-                    for rank, row in enumerate(tri_rows, 1):
-                        scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + weight / (60 + rank)
-
-        # An explicit filename (for example ARCHITECTURE.md) is a navigation
-        # request, not merely another bag-of-words term.  Resolve it in its own
-        # channel so a large number of repeated code tokens cannot push the
-        # named document beyond the generic candidate cutoff.
-        filename_terms = [term for term in terms if "." in term]
-        trace.channels["filename"] = 0
-        if filename_terms:
-            filename_clauses = " OR ".join(
-                "lower(d.relative_path)=? OR lower(d.relative_path) LIKE ? ESCAPE '\\'"
-                for _ in filename_terms
-            )
-            filename_params: List[object] = []
-            for term in filename_terms:
-                escaped_term = term.replace("%", "\\%").replace("_", "\\_")
-                filename_params.extend((term, "%/" + escaped_term))
-            filename_collection_clause = " AND d.collection_name=?" if collection else ""
-            if collection:
-                filename_params.append(collection)
-            # A named file plus a symbol requests the relevant section of that
-            # file. Prefer body matches before its first two ordinal chunks.
-            filename_order = "d.relative_path, c.ordinal, c.id"
-            if explicit_body_ids:
-                filename_order = "CASE WHEN c.id IN (" + ",".join("?" for _ in explicit_body_ids) + ") THEN 0 ELSE 1 END, " + filename_order
-                filename_params.extend(explicit_body_ids)
-            filename_params.append(candidate_limit)
-            filename_rows = connection.execute(
-                "SELECT c.id AS chunk_id, c.document_id FROM chunks c "
-                "JOIN eligible_documents d ON d.id=c.document_id WHERE (" + filename_clauses + ")"
-                + filename_collection_clause
-                + " ORDER BY " + filename_order + " LIMIT ?",
-                tuple(filename_params),
-            ).fetchall()
-            trace.channels["filename"] = len(filename_rows)
-            filename_per_document: Dict[str, int] = {}
-            filename_rank = 0
-            for row in filename_rows:
-                document_id = row["document_id"]
-                if filename_per_document.get(document_id, 0) >= 2:
-                    continue
-                filename_per_document[document_id] = filename_per_document.get(document_id, 0) + 1
-                filename_rank += 1
-                scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 4.0 / (60 + filename_rank)
-
-        # Short Latin words in a question ("I", "is", "my", "in") are not
-        # substring navigation requests. FTS already handles their word bounds.
-        # A particle form ("sqlite는") never names a path; its base is already a term.
-        path_terms = [term for term in [term for term in terms if not _particle_base(term)][:4]
-                      if len(term) >= 3 or CJK_RE.search(term)]
-        like_terms = ["%%%s%%" % term.replace("%", "\\%").replace("_", "\\_") for term in path_terms]
-        clauses = " OR ".join("lower(d.title) LIKE ? ESCAPE '\\' OR lower(d.relative_path) LIKE ? ESCAPE '\\'" for _ in like_terms)
-        params: List[object] = []
-        for value in like_terms:
-            params.extend((value, value))
-        collection_clause = " AND d.collection_name=?" if collection else ""
-        if collection:
-            params.append(collection)
-        params.append(candidate_limit)
-        path_rows = connection.execute(
-            "SELECT c.id AS chunk_id, d.title, d.relative_path "
-            "FROM chunks c JOIN eligible_documents d ON d.id=c.document_id "
-            "WHERE (" + clauses + ")" + collection_clause + " ORDER BY d.title, c.ordinal, c.id LIMIT ?",
-            tuple(params),
-        ).fetchall() if like_terms else []
-        trace.channels["path"] = len(path_rows)
-        exact_name_rank = 0
-        for rank, row in enumerate(path_rows, 1):
-            title = normalize_text(row["title"]).casefold()
-            stem = normalize_text(Path(row["relative_path"]).stem).casefold()
-            filename = normalize_text(Path(row["relative_path"]).name).casefold()
-            if any(term == title or term == stem or term == filename for term in terms):
-                # A literal document name is a strong navigation instruction,
-                # independent of how often query words repeat inside code.
-                exact_name_rank += 1
-                path_score = 3.0 / (60 + exact_name_rank)
-            else:
-                path_score = 0.8 / (60 + rank)
-            scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + path_score
-
-        # Trigram/compact FTS already covers Korean terms of length >= 3.
-        # Reserve the linear fallback for one/two-character CJK terms. Applying
-        # it to Latin function words adds arbitrary hits to RRF. Take matches in
-        # chunk-id order: scan order would favor the files indexed earliest.
-        # Chunk ids start with the document id, so (d.id, c.id) is the same order
-        # and lets a collection-scoped scan follow documents_collection_id_idx.
-        short_terms = [term for term in terms if len(term) < 3 and CJK_RE.search(term)]
-        trace.channels["short_cjk"] = 0
-        for term in short_terms[:3]:
-            short_params: List[object] = [term]
-            if collection:
-                short_params.append(collection)
-            short_params.append(candidate_limit)
-            short_rows = connection.execute(
-                "SELECT c.id AS chunk_id FROM chunks c JOIN eligible_documents d ON d.id=c.document_id "
-                "WHERE instr(lower(c.text), ?) > 0" + collection_clause + " ORDER BY d.id, c.id LIMIT ?",
-                tuple(short_params),
-            ).fetchall()
-            trace.channels["short_cjk"] += len(short_rows)
-            for rank, row in enumerate(short_rows, 1):
-                scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 0.55 / (60 + rank)
-
-        trace.candidates = len(scores)
-        ranked_rows = []
-        for chunk_id, raw_score in scores.items():
-            row = connection.execute(
-                """SELECT
-                       c.*, d.id AS doc_id, d.collection_name, d.path, d.relative_path,
-                       d.real_path, d.title, d.size_bytes, d.mtime_ns, d.source_sha256,
-                       d.generation, d.chunker_version, d.status, d.extension,
-                       d.memory_status, d.memory_scope, d.memory_sensitivity, d.memory_entry_type, d.memory_kind, d.memory_error,
-                       d.memory_valid_from, d.memory_review_after, col.kind, col.trust, col.priority
-                   FROM chunks c
-                   JOIN eligible_documents d ON d.id=c.document_id
-                   JOIN collections col ON col.name=d.collection_name
-                   WHERE c.id=? AND d.status='ok'""",
-                (chunk_id,),
-            ).fetchone()
-            if not row or (collection and row["collection_name"] != collection):
-                continue
-            ranked_rows.append((raw_score * float(row["priority"]), chunk_id, row))
-        ranked_rows.sort(key=lambda item: (-item[0], item[1]))
-
         hash_cache: Dict[str, str] = {}
-        per_document: Dict[str, int] = {}
         valid_documents: Dict[str, bool] = {}
-        hits: List[SearchHit] = []
-        for effective_score, _chunk_id, row in ranked_rows:
-            if per_document.get(row["doc_id"], 0) >= 2:
-                continue
-            if row["doc_id"] not in valid_documents:
-                valid_documents[row["doc_id"]] = _validate_document(row, config, hash_cache)
-            if not valid_documents[row["doc_id"]]:
-                continue
-            per_document[row["doc_id"]] = per_document.get(row["doc_id"], 0) + 1
-            generation = row["generation"]
-            ordinal = row["ordinal"]
-            hits.append(
-                SearchHit(
-                    rank=len(hits) + 1,
-                    ref="%s@%s#%d" % (row["doc_id"], generation, ordinal),
-                    document_id=row["doc_id"],
-                    generation=generation,
-                    collection=row["collection_name"],
-                    kind=row["kind"],
-                    trust=row["trust"],
-                    title=row["title"],
-                    path=row["path"],
-                    relative_path=row["relative_path"],
-                    heading=row["heading"],
-                    locator=row["locator"],
-                    start_line=row["start_line"],
-                    end_line=row["end_line"],
-                    page=row["page"],
-                    token_estimate=row["token_estimate"],
-                    snippet=_snippet(row["text"], terms, config.default_snippet_chars),
-                    score=round(effective_score, 8),
-                    memory_status=row["memory_status"], memory_scope=row["memory_scope"],
-                    memory_sensitivity=row["memory_sensitivity"], memory_entry_type=row["memory_entry_type"],
-                    memory_kind=row["memory_kind"], memory_error=row["memory_error"],
-                    memory_valid_from=row["memory_valid_from"], memory_review_after=row["memory_review_after"],
-                )
-            )
-            if len(hits) >= wanted:
-                break
-        trace.checked_documents = len(valid_documents)
-        trace.unreadable_or_changed_documents = sum(not valid for valid in valid_documents.values())
-        trace.returned = len(hits)
+        for attempt in range(MAX_SEARCH_ROUNDS):
+            trace.rounds = attempt + 1
+            trace.candidate_limit = candidate_limit
+            trace.saturated_channels = []
+            hits = _search_round(connection, config, query, terms, wanted, collection,
+                                 candidate_limit, trace, hash_cache, valid_documents)
+            # Refill only when current candidates were rejected and at least one
+            # channel may contain more. Ordinary searches keep their old limits.
+            refill = (len(hits) < wanted and trace.unreadable_or_changed_documents > 0
+                      and bool(trace.saturated_channels))
+            if not refill:
+                return hits
+            if candidate_limit >= MAX_SEARCH_CANDIDATES or attempt + 1 == MAX_SEARCH_ROUNDS:
+                trace.refill_exhausted = True
+                return hits
+            candidate_limit = min(MAX_SEARCH_CANDIDATES, candidate_limit * 4)
         return hits
     finally:
+        trace.total_ms = round((time.perf_counter() - started) * 1000, 3)
         connection.close()
+
+
+def _search_round(
+    connection: sqlite3.Connection, config: AppConfig, query: str, terms: List[str],
+    wanted: int, collection: Optional[str], candidate_limit: int, trace: SearchDiagnostics,
+    hash_cache: Dict[str, str], valid_documents: Dict[str, bool],
+) -> List[SearchHit]:
+    scores: Dict[str, float] = {}
+    channel_cache: Dict[tuple, list] = {}
+
+    def channel(name: str, sql: str, parameters: tuple) -> list:
+        started = time.perf_counter()
+        try:
+            # A single-term trigram and compact query are often identical.
+            # Reuse the SQL result but preserve both channels' ranking votes.
+            key = (sql, parameters)
+            if key not in channel_cache:
+                channel_cache[key] = connection.execute(sql, parameters).fetchall()
+            rows = channel_cache[key]
+            if len(rows) >= candidate_limit and name not in trace.saturated_channels:
+                trace.saturated_channels.append(name)
+            return rows
+        finally:
+            trace.channel_ms[name] = round(trace.channel_ms.get(name, 0.0)
+                                           + (time.perf_counter() - started) * 1000, 3)
+
+    fts_query = _fts_query(terms)
+    fts_collection_clause = " AND d.collection_name=?" if collection else ""
+    fts_params: List[object] = [fts_query]
+    if collection:
+        fts_params.append(collection)
+    fts_params.append(candidate_limit)
+    # Channels break ties by chunk id, not rowid. Rowids record index
+    # history: a file edited and restored is reinserted last.
+    try:
+        rows = channel("word",
+            "SELECT chunks_fts.chunk_id, bm25(chunks_fts, 0.1, 0.4, 0.5, 0.4, 1.0) AS relevance "
+            "FROM chunks_fts "
+            "JOIN chunks c ON c.id=chunks_fts.chunk_id "
+            "JOIN eligible_documents d ON d.id=c.document_id "
+            "WHERE chunks_fts MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
+            tuple(fts_params),
+        )
+    except sqlite3.OperationalError:
+        rows = []
+        trace.channel_errors.append("word")
+    trace.channels["word"] = len(rows)
+    for rank, row in enumerate(rows, 1):
+        scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
+
+    # Keeping an explicit symbol in a long OR query is not sufficient:
+    # boilerplate can still outrank its definition/call site. Retrieve the
+    # named evidence in its own bounded body channel, under the same policy.
+    anchors = _explicit_terms(query, terms)
+    explicit_body_ids: List[str] = []
+    trace.channels["explicit_body"] = 0
+    if anchors:
+        anchor_params: List[object] = [_fts_query(anchors, prefix=False)]
+        if collection:
+            anchor_params.append(collection)
+        anchor_params.append(candidate_limit)
+        try:
+            anchor_rows = channel("explicit_body",
+                "SELECT chunks_fts.chunk_id, c.text, bm25(chunks_fts) AS relevance "
+                "FROM chunks_fts JOIN chunks c ON c.id=chunks_fts.chunk_id "
+                "JOIN eligible_documents d ON d.id=c.document_id "
+                "WHERE chunks_fts.body MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
+                tuple(anchor_params),
+            )
+        except sqlite3.OperationalError:
+            anchor_rows = []
+            trace.channel_errors.append("explicit_body")
+        anchor_rows = [row for row in anchor_rows if any(term in normalize_text(row["text"]).casefold() for term in anchors)]
+        explicit_body_ids = [row["chunk_id"] for row in anchor_rows]
+        trace.channels["explicit_body"] = len(anchor_rows)
+        for rank, row in enumerate(anchor_rows, 1):
+            scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 1.4 / (60 + rank)
+
+    trace.trigram_available = trigram_available(connection)
+    if trace.trigram_available:
+        tri_terms = [term for term in terms if len(term) >= 3]
+        if tri_terms:
+            tri_query = _fts_query(tri_terms, prefix=False)
+            compact_query = _fts_query(["".join(normalize_text(query).split())], prefix=False)
+            for name, current_query, weight in (("trigram", tri_query, 0.9), ("compact", compact_query, 0.65)):
+                tri_params: List[object] = [current_query]
+                if collection:
+                    tri_params.append(collection)
+                tri_params.append(candidate_limit)
+                try:
+                    tri_rows = channel(name,
+                        "SELECT chunks_trigram.chunk_id, bm25(chunks_trigram) AS relevance "
+                        "FROM chunks_trigram "
+                        "JOIN chunks c ON c.id=chunks_trigram.chunk_id "
+                        "JOIN eligible_documents d ON d.id=c.document_id "
+                        "WHERE chunks_trigram MATCH ?" + fts_collection_clause + " ORDER BY relevance, c.id LIMIT ?",
+                        tuple(tri_params),
+                    )
+                except sqlite3.OperationalError:
+                    tri_rows = []
+                    trace.channel_errors.append(name)
+                trace.channels[name] = len(tri_rows)
+                for rank, row in enumerate(tri_rows, 1):
+                    scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + weight / (60 + rank)
+
+    # An explicit filename (for example ARCHITECTURE.md) is a navigation
+    # request, not merely another bag-of-words term.  Resolve it in its own
+    # channel so a large number of repeated code tokens cannot push the
+    # named document beyond the generic candidate cutoff.
+    filename_terms = [term for term in terms if "." in term]
+    trace.channels["filename"] = 0
+    if filename_terms:
+        filename_clauses = " OR ".join(
+            "lower(d.relative_path)=? OR lower(d.relative_path) LIKE ? ESCAPE '\\'"
+            for _ in filename_terms
+        )
+        filename_params: List[object] = []
+        for term in filename_terms:
+            escaped_term = term.replace("%", "\\%").replace("_", "\\_")
+            filename_params.extend((term, "%/" + escaped_term))
+        filename_collection_clause = " AND d.collection_name=?" if collection else ""
+        if collection:
+            filename_params.append(collection)
+        # A named file plus a symbol requests the relevant section of that
+        # file. Prefer body matches before its first two ordinal chunks.
+        filename_order = "d.relative_path, c.ordinal, c.id"
+        if explicit_body_ids:
+            filename_order = "CASE WHEN c.id IN (" + ",".join("?" for _ in explicit_body_ids) + ") THEN 0 ELSE 1 END, " + filename_order
+            filename_params.extend(explicit_body_ids)
+        filename_params.append(candidate_limit)
+        filename_rows = channel("filename",
+            "SELECT c.id AS chunk_id, c.document_id FROM chunks c "
+            "JOIN eligible_documents d ON d.id=c.document_id WHERE (" + filename_clauses + ")"
+            + filename_collection_clause
+            + " ORDER BY " + filename_order + " LIMIT ?",
+            tuple(filename_params),
+        )
+        trace.channels["filename"] = len(filename_rows)
+        filename_per_document: Dict[str, int] = {}
+        filename_rank = 0
+        for row in filename_rows:
+            document_id = row["document_id"]
+            if filename_per_document.get(document_id, 0) >= 2:
+                continue
+            filename_per_document[document_id] = filename_per_document.get(document_id, 0) + 1
+            filename_rank += 1
+            scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 4.0 / (60 + filename_rank)
+
+    # Short Latin words in a question ("I", "is", "my", "in") are not
+    # substring navigation requests. FTS already handles their word bounds.
+    # A particle form ("sqlite는") never names a path; its base is already a term.
+    path_terms = [term for term in [term for term in terms if not _particle_base(term)][:4]
+                  if len(term) >= 3 or CJK_RE.search(term)]
+    like_terms = ["%%%s%%" % term.replace("%", "\\%").replace("_", "\\_") for term in path_terms]
+    clauses = " OR ".join("lower(d.title) LIKE ? ESCAPE '\\' OR lower(d.relative_path) LIKE ? ESCAPE '\\'" for _ in like_terms)
+    params: List[object] = []
+    for value in like_terms:
+        params.extend((value, value))
+    collection_clause = " AND d.collection_name=?" if collection else ""
+    if collection:
+        params.append(collection)
+    params.append(candidate_limit)
+    path_rows = channel("path",
+        "SELECT c.id AS chunk_id, d.title, d.relative_path "
+        "FROM chunks c JOIN eligible_documents d ON d.id=c.document_id "
+        "WHERE (" + clauses + ")" + collection_clause + " ORDER BY d.title, c.ordinal, c.id LIMIT ?",
+        tuple(params),
+    ) if like_terms else []
+    trace.channels["path"] = len(path_rows)
+    exact_name_rank = 0
+    for rank, row in enumerate(path_rows, 1):
+        title = normalize_text(row["title"]).casefold()
+        stem = normalize_text(Path(row["relative_path"]).stem).casefold()
+        filename = normalize_text(Path(row["relative_path"]).name).casefold()
+        if any(term == title or term == stem or term == filename for term in terms):
+            # A literal document name is a strong navigation instruction,
+            # independent of how often query words repeat inside code.
+            exact_name_rank += 1
+            path_score = 3.0 / (60 + exact_name_rank)
+        else:
+            path_score = 0.8 / (60 + rank)
+        scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + path_score
+
+    # Trigram/compact FTS already covers Korean terms of length >= 3.
+    # Reserve the linear fallback for one/two-character CJK terms. Applying
+    # it to Latin function words adds arbitrary hits to RRF. Take matches in
+    # chunk-id order: scan order would favor the files indexed earliest.
+    # Chunk ids start with the document id, so (d.id, c.id) is the same order
+    # and lets a collection-scoped scan follow documents_collection_id_idx.
+    short_terms = [term for term in terms if len(term) < 3 and CJK_RE.search(term)]
+    trace.channels["short_cjk"] = 0
+    for term in short_terms[:3]:
+        short_params: List[object] = [term]
+        if collection:
+            short_params.append(collection)
+        short_params.append(candidate_limit)
+        short_rows = channel("short_cjk",
+            "SELECT c.id AS chunk_id FROM chunks c JOIN eligible_documents d ON d.id=c.document_id "
+            "WHERE instr(lower(c.text), ?) > 0" + collection_clause + " ORDER BY d.id, c.id LIMIT ?",
+            tuple(short_params),
+        )
+        trace.channels["short_cjk"] += len(short_rows)
+        for rank, row in enumerate(short_rows, 1):
+            scores[row["chunk_id"]] = scores.get(row["chunk_id"], 0.0) + 0.55 / (60 + rank)
+
+    trace.candidates = len(scores)
+    ranked_rows = []
+    chunk_ids = list(scores)
+    # Bound SQL parameters even on SQLite builds with the legacy 999 limit.
+    for offset in range(0, len(chunk_ids), 400):
+        batch = chunk_ids[offset:offset + 400]
+        rows = connection.execute(
+            """SELECT
+                   c.*, d.id AS doc_id, d.collection_name, d.path, d.relative_path,
+                   d.real_path, d.title, d.size_bytes, d.mtime_ns, d.source_sha256,
+                   d.generation, d.chunker_version, d.status, d.extension,
+                   d.memory_status, d.memory_scope, d.memory_sensitivity, d.memory_entry_type, d.memory_kind, d.memory_error,
+                   d.memory_valid_from, d.memory_review_after, col.kind, col.trust, col.priority
+               FROM chunks c
+               JOIN eligible_documents d ON d.id=c.document_id
+               JOIN collections col ON col.name=d.collection_name
+               WHERE c.id IN (%s) AND d.status='ok'""" % ",".join("?" for _ in batch),
+            tuple(batch),
+        ).fetchall()
+        for row in rows:
+            if collection and row["collection_name"] != collection:
+                continue
+            chunk_id = row["id"]
+            ranked_rows.append((scores[chunk_id] * float(row["priority"]), chunk_id, row))
+    ranked_rows.sort(key=lambda item: (-item[0], item[1]))
+
+    per_document: Dict[str, int] = {}
+    hits: List[SearchHit] = []
+    for effective_score, _chunk_id, row in ranked_rows:
+        if per_document.get(row["doc_id"], 0) >= 2:
+            continue
+        if row["doc_id"] not in valid_documents:
+            valid_documents[row["doc_id"]] = _validate_document(row, config, hash_cache)
+        if not valid_documents[row["doc_id"]]:
+            continue
+        per_document[row["doc_id"]] = per_document.get(row["doc_id"], 0) + 1
+        generation = row["generation"]
+        ordinal = row["ordinal"]
+        hits.append(
+            SearchHit(
+                rank=len(hits) + 1,
+                ref="%s@%s#%d" % (row["doc_id"], generation, ordinal),
+                document_id=row["doc_id"],
+                generation=generation,
+                collection=row["collection_name"],
+                kind=row["kind"],
+                trust=row["trust"],
+                title=row["title"],
+                path=row["path"],
+                relative_path=row["relative_path"],
+                heading=row["heading"],
+                locator=row["locator"],
+                start_line=row["start_line"],
+                end_line=row["end_line"],
+                page=row["page"],
+                token_estimate=row["token_estimate"],
+                snippet=_snippet(row["text"], terms, config.default_snippet_chars),
+                score=round(effective_score, 8),
+                memory_status=row["memory_status"], memory_scope=row["memory_scope"],
+                memory_sensitivity=row["memory_sensitivity"], memory_entry_type=row["memory_entry_type"],
+                memory_kind=row["memory_kind"], memory_error=row["memory_error"],
+                memory_valid_from=row["memory_valid_from"], memory_review_after=row["memory_review_after"],
+            )
+        )
+        if len(hits) >= wanted:
+            break
+    trace.checked_documents = len(valid_documents)
+    trace.unreadable_or_changed_documents = sum(not valid for valid in valid_documents.values())
+    trace.returned = len(hits)
+    return hits
 
 
 def _location(row: sqlite3.Row) -> str:
@@ -610,6 +675,19 @@ def fetch(
     query: Optional[str] = None,
     lines: Optional[Tuple[int, int]] = None,
 ) -> str:
+    return _fetch_with_excerpt(config, ref, max_tokens, around, part, span, policy, query, lines)[0]
+
+
+def _fetch_with_excerpt(
+    config: AppConfig, ref: str, max_tokens: int = 1200, around: int = 0, part: int = 1,
+    span: Optional[Tuple[int, int]] = None, policy: Optional[MemoryPolicy] = None,
+    query: Optional[str] = None, lines: Optional[Tuple[int, int]] = None,
+) -> Tuple[str, str]:
+    """Return the ordinary output and its literal single-chunk excerpt.
+
+    Evaluation must not credit a title/path/continuation notice as evidence.
+    Multi-chunk and line-navigation reads do not expose this auxiliary excerpt.
+    """
     match = REF_RE.fullmatch(ref.strip())
     if not match:
         raise ValueError("Invalid document ref; use the opaque ref returned by search")
@@ -622,7 +700,7 @@ def fetch(
         if not isinstance(lines, (tuple, list)) or len(lines) != 2:
             raise ValueError("Source lines require start_line and end_line")
         from .source_navigation import read_lines
-        return read_lines(config, ref, *lines, max_bytes=budget, policy=policy)
+        return read_lines(config, ref, *lines, max_bytes=budget, policy=policy), ""
     focus_terms = None
     if query is not None:
         if not isinstance(query, str) or not query.strip() or len(query) > 2000:
@@ -699,7 +777,7 @@ def fetch(
                           + footer_template % ("yes" if start else "no", "yes" if end < len(text) else "no"))
                 if not _validate_document(row, config, {}):
                     raise StaleReferenceError("Canonical source changed while reading; search again")
-                return output
+                return output, text[start:end]
             focus_note = "\nfocus: no literal match; ordinary read follows."
         bodies = []
         for chunk in chunks:
@@ -728,7 +806,14 @@ def fetch(
         output = header + rendered_part + footer
         if not _validate_document(row, config, {}):
             raise StaleReferenceError("Canonical source changed while reading; search again")
-        return output
+        excerpt = ""
+        if around == 0:
+            prefix = "--- %s ---\n" % _location(chunks[0])
+            if part == 1:
+                excerpt = rendered_part[len(prefix):] if rendered_part.startswith(prefix) else ""
+            else:
+                excerpt = rendered_part
+        return output, excerpt
     finally:
         connection.close()
 
@@ -758,16 +843,24 @@ def _format_diagnostics(trace: SearchDiagnostics) -> str:
     lines = ["SEARCH EXPLANATION (request only; not saved)",
              "selected terms: " + ", ".join(trace.selected_terms),
              "omitted terms: %d%s" % (trace.omitted_count, " (" + ", ".join(trace.omitted_terms) + ")" if trace.omitted_terms else ""),
-             "collection: %s | policy: %s" % (trace.collection or "all", json_dumps(trace.policy)),
+             "collection: %s (%s) | policy: %s" % (trace.collection or "all", trace.collection_state, json_dumps(trace.policy)),
              "eligible channel candidates (bounded): " + ", ".join("%s=%d" % item for item in trace.channels.items()),
              "unique candidates: %d | checked documents: %d | changed/unreadable: %d | returned: %d" % (
                  trace.candidates, trace.checked_documents, trace.unreadable_or_changed_documents, trace.returned),
              "Excluded sources are not inspected. Counts do not identify policy-denied matches."]
+    lines.append("candidate rounds: %d | per-channel limit: %d | saturated: %s | refill exhausted: %s" % (
+        trace.rounds, trace.candidate_limit, ", ".join(trace.saturated_channels) or "none", trace.refill_exhausted))
+    lines.append("SQL channel ms (total across rounds): %s | search ms: %.3f" % (
+        ", ".join("%s=%.3f" % pair for pair in trace.channel_ms.items()) or "none", trace.total_ms))
+    if trace.collection_state in {"unknown", "disabled"}:
+        lines.append("Next: use amem catalog to select an enabled collection; this scope was not searched.")
+    elif trace.refill_exhausted:
+        lines.append("Candidate refill budget exhausted; more matches may exist. Sync the changed collection and retry.")
     if trace.channel_errors:
         lines.append("channel errors: " + ", ".join(trace.channel_errors) + "; check index health with doctor.")
-    if not trace.trigram_available:
+    if trace.rounds and not trace.trigram_available:
         lines.append("Trigram index unavailable; word, path and short CJK channels remain available.")
-    if not trace.returned:
+    if not trace.returned and trace.collection_state not in {"unknown", "disabled"} and not trace.refill_exhausted:
         lines.append("Next: try literal source terms; check collection/scope/status. Sync a known changed source only.")
     return "\n".join(lines)
 

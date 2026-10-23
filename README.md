@@ -185,6 +185,14 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 
 ## Develop and verify
 
+`amem eval` supports optional `required_paths` (every exact path must be visible)
+and `required_evidence` (every literal must occur in a bounded source read).
+Legacy `relevant_paths` still means any matching path. See the
+[example and evaluation contract](docs/agent-contract.md#evidence-aware-evaluation).
+`search --explain` also reports collection state, bounded candidate refill and
+per-channel SQL timings. MCP reloads configuration for each tool request;
+changing feedback write mode requires restarting the server.
+
 The [actual external-system comparison](benchmarks/SYSTEM_COMPARISON.md) runs
 qmd, HippoRAG 2, Graphiti, Mem0 OSS, Letta Code and the SCIP Python indexer on
 synthetic/public sources using ChatGPT-plan Codex. It separates single-query
