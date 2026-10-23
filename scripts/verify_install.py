@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import select
 import subprocess
 import tempfile
 from pathlib import Path
@@ -66,6 +67,16 @@ def main() -> None:
             assert len(text.rstrip("\n").encode("utf-8")) <= 1200
         result = json.loads(run("eval", "--json"))
         assert result["passed_cases"] == 3 and result["negative_cases"] == 1
+        evidence_cases = home / "eval" / "source-evidence.jsonl"
+        evidence_cases.write_text(json.dumps({
+            "query": "BridgeProject", "collection": "research",
+            "required_paths": ["owner.md", "store.md"],
+            "required_evidence": [{"path": "owner.md", "text": "SyntheticOwner"},
+                                  {"path": "store.md", "text": "SyntheticStore"}],
+        }) + "\n")
+        evidence_report = json.loads(run("eval", "--file", str(evidence_cases), "--json"))
+        assert evidence_report["passed"] and evidence_report["requirement_passes"] == 1
+        assert 2 <= evidence_report["read_operations"] <= 3
         run("capture", "--kind", "decision", "--title", "Synthetic inbox marker",
             "--body", "publicdemoinboxmarker", "--source", "synthetic-test")
         assert not json.loads(run("search", "publicdemoinboxmarker", "--collection", "vault", "--json"))["results"]
@@ -113,6 +124,36 @@ def main() -> None:
             assert not response["result"].get("isError", False), response
             assert len(response["result"]["content"][0]["text"].encode("utf-8")) <= 1200
         config_file = home / "config.json"
+        original_config = config_file.read_text()
+        live = subprocess.Popen([str(command), "--home", str(home), "mcp"], cwd=root, env=environment,
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            def exchange(identifier, name, **arguments):
+                live.stdin.write(json.dumps({"jsonrpc": "2.0", "id": identifier, "method": "tools/call",
+                                             "params": {"name": name, "arguments": arguments}}) + "\n")
+                live.stdin.flush()
+                if not select.select([live.stdout], [], [], 30)[0]:
+                    raise RuntimeError("Live MCP response timed out")
+                return json.loads(live.stdout.readline())
+
+            assert owner["ref"] in json.dumps(exchange(1, "memory_search", query="SyntheticOwner", collection="research"))
+            disabled = json.loads(original_config)
+            next(source for source in disabled["sources"] if source["name"] == "research")["enabled"] = False
+            config_file.write_text(json.dumps(disabled))
+            assert owner["ref"] not in json.dumps(exchange(2, "memory_search", query="SyntheticOwner", collection="research"))
+            assert exchange(3, "memory_fetch", ref=owner["ref"])["result"]["isError"]
+            config_file.write_text(original_config)
+            assert "SyntheticOwner" in json.dumps(exchange(4, "memory_fetch", ref=owner["ref"]))
+        finally:
+            config_file.write_text(original_config)
+            live.stdin.close()
+            try:
+                live.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                live.kill()
+                live.wait()
+            live.stdout.close()
+            live.stderr.close()
         config = json.loads(config_file.read_text())
         next(source for source in config["sources"] if source["name"] == "research")["exclude_globs"] = ["obsolete.md"]
         config_file.write_text(json.dumps(config))
@@ -126,7 +167,7 @@ def main() -> None:
         assert "SyntheticOwner" in run("read", owner["ref"], "--max-tokens", "1200")
         after = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in (home / "knowledge").iterdir()}
         assert before == after, "Source documents were changed"
-        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, locate/lines/character spans, explanations, eval, inbox policy, feedback triage/stats/export, exclusion reuse, stdio MCP, read-only source files")
+        print("PASS: init, doctor, sync, bilingual search/read/focus, source-bound follow-up, locate/lines/character spans, explanations, eval/evidence, inbox policy, feedback triage/stats/export, exclusion reuse, stdio MCP/live config reload, read-only source files")
 
 
 if __name__ == "__main__":

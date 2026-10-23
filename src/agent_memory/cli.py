@@ -14,6 +14,7 @@ from typing import Optional, Sequence
 from . import __version__
 from .config import load_config, source_by_name
 from .database import MINIMUM_FTS_SECURE_DELETE_VERSION, connect, trigram_available
+from .evaluation import check_requirements, exact_path, requirements
 from .feedback import (
     FAILURE_CATEGORIES,
     MAX_EXPORT_LIMIT,
@@ -215,7 +216,7 @@ def _parser() -> argparse.ArgumentParser:
     feedback_prune.add_argument("--dry-run", action="store_true")
     feedback_prune.add_argument("--json", action="store_true")
 
-    eval_parser = subparsers.add_parser("eval", help="Run file-level retrieval gold queries.")
+    eval_parser = subparsers.add_parser("eval", help="Run retrieval gold queries and optional bounded source-evidence checks.")
     eval_parser.add_argument("--file", type=Path)
     eval_parser.add_argument("--fail-under", type=float, default=0.8)
     eval_parser.add_argument("--fail-under-mrr", type=float, default=0.5)
@@ -723,6 +724,7 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
     reciprocal_sum = 0.0
     total_search_units = 0
     max_search_units = 0
+    requirement_cases = requirement_passes = read_operations = read_units = 0
     details = []
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
@@ -738,14 +740,19 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
             if not 1 <= k <= 20:
                 raise ValueError("eval line %d: k must be within [1, 20]" % line_number)
             relevant = [str(value) for value in case.get("relevant_paths", [])]
+            required = requirements(case)
+            required_paths, required_evidence = required[:2]
+            has_requirements = bool(required_paths or required_evidence)
             expect_no_results = bool(case.get("expect_no_results", False))
             if expect_no_results and relevant:
                 raise ValueError("eval line %d: expect_no_results cannot have relevant_paths" % line_number)
-            if not expect_no_results and not relevant:
-                raise ValueError("eval line %d: relevant_paths is required" % line_number)
+            if not expect_no_results and not relevant and not has_requirements:
+                raise ValueError("eval line %d: relevant_paths or required evidence is required" % line_number)
             forbidden_paths = [str(value) for value in case.get("forbidden_paths", [])]
             forbidden_collections = {str(value) for value in case.get("forbidden_collections", [])}
-            results = search(config, query, limit=k, collection=case.get("collection"))
+            policy = MemoryPolicy(case.get("memory_status", "reviewed"), case.get("project"),
+                                  case.get("domain"), case.get("shareable_only", False))
+            results = search(config, query, limit=k, collection=case.get("collection"), policy=policy)
             rendered, visible_results = format_search_with_visible_hits(
                 results,
                 max_units=SEARCH_OUTPUT_MAX_UNITS,
@@ -760,7 +767,9 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
             matched_rank: Optional[int] = None
             matched_path: Optional[str] = None
             for result in visible_results:
-                if any(value in result.path or value in result.relative_path for value in relevant):
+                if (any(value in result.path or value in result.relative_path for value in relevant)
+                        or (not relevant and any(exact_path(result, value) for value in
+                            required_paths + [item["path"] for item in required_evidence]))):
                     matched_rank = result.rank
                     matched_path = result.path
                     break
@@ -785,6 +794,13 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
                 if success:
                     hits_count += 1
                     reciprocal_sum += 1.0 / int(matched_rank)
+            evidence_check = check_requirements(config, query, visible_results, policy, required)
+            if has_requirements:
+                requirement_cases += 1
+                requirement_passes += int(evidence_check["requirements_met"])
+            read_operations += evidence_check["read_operations"]
+            read_units += evidence_check["read_units"]
+            success = success and evidence_check["requirements_met"]
             if success and not contamination and not budget_violation:
                 passed_cases += 1
             details.append(
@@ -801,6 +817,7 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
                     "search_units": search_units,
                     "budget_violation": budget_violation,
                     "contamination": contamination,
+                    **evidence_check,
                 }
             )
     hit_rate = hits_count / positive_cases if positive_cases else 0.0
@@ -822,6 +839,11 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
         "average_search_units": round(total_search_units / total if total else 0.0, 1),
         "max_search_units": max_search_units,
         "budget_violations": budget_violations,
+        "requirement_cases": requirement_cases,
+        "requirement_passes": requirement_passes,
+        "requirements_pass_rate": round(requirement_passes / requirement_cases, 4) if requirement_cases else 1.0,
+        "read_operations": read_operations,
+        "read_units": read_units,
         "details": details,
     }
 
@@ -1069,6 +1091,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                 and report["contamination_rate"] <= args.max_contamination_rate
                 and report["average_search_units"] <= args.max_average_units
                 and report["budget_violations"] <= args.allow_budget_violations
+                and report["requirement_passes"] == report["requirement_cases"]
             )
             report["passed"] = passed
             report["thresholds"] = {
@@ -1077,12 +1100,15 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                 "max_contamination_rate": args.max_contamination_rate,
                 "max_average_search_units": args.max_average_units,
                 "allowed_budget_violations": args.allow_budget_violations,
+                "requirements_pass_rate": 1.0,
             }
             print(json_dumps(report, pretty=True) if args.json else (
-                "cases=%d passed=%d hits=%d hit_rate@k=%.4f mrr=%.4f contamination=%.4f avg_units=%.1f budget_violations=%d gate=%s" % (
+                "cases=%d passed=%d hits=%d hit_rate@k=%.4f mrr=%.4f contamination=%.4f avg_units=%.1f budget_violations=%d requirements=%d/%d reads=%d read_units=%d gate=%s" % (
                     report["cases"], report["passed_cases"], report["hits"],
                     report["hit_rate_at_k"], report["mrr"], report["contamination_rate"],
                     report["average_search_units"], report["budget_violations"],
+                    report["requirement_passes"], report["requirement_cases"],
+                    report["read_operations"], report["read_units"],
                     "pass" if passed else "fail",
                 )
             ))

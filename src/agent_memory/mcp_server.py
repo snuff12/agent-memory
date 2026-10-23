@@ -6,7 +6,7 @@ import sys
 from typing import Any, Dict, Optional
 
 from . import __version__
-from .config import AppConfig
+from .config import AppConfig, load_config
 from .feedback import record_zero_result
 from .followup import bridge_query, followup_search, format_followup
 from .memory_policy import MemoryPolicy
@@ -383,7 +383,7 @@ def _tool_call(config: AppConfig, identifier: Any, params: Dict[str, Any]) -> Di
     raise _InvalidParamsError("Unknown tool: %s" % name)
 
 
-def _dispatch_request(config: AppConfig, message: Any) -> Optional[Dict[str, Any]]:
+def _dispatch_request(config: AppConfig, message: Any, refresh_config: bool = False) -> Optional[Dict[str, Any]]:
     identifier, method, params = _request_parts(message)
     if method and method.startswith("notifications/"):
         return None
@@ -417,6 +417,18 @@ def _dispatch_request(config: AppConfig, message: Any) -> Optional[Dict[str, Any
         )
     if method == "ping":
         return _response(identifier, _complete({}))
+    if refresh_config and method in {"tools/list", "tools/call"} and isinstance(config, AppConfig):
+        # A stdio session can outlive config edits. Never fall back to the
+        # startup policy if its current configuration is missing or invalid.
+        try:
+            current = load_config(config.home)
+        except (OSError, ValueError, TypeError, KeyError):
+            return _error(identifier, -32603, "Memory configuration unavailable; repair config.json and retry")
+        if current.feedback.auto_record_zero_results != config.feedback.auto_record_zero_results:
+            # Tool annotations were advertised for the lifetime of this session.
+            # Do not silently turn a read-only tool into a writer (or vice versa).
+            return _error(identifier, -32603, "Feedback mode changed; restart the MCP server to refresh tool annotations")
+        config = current
     if method == "tools/list":
         return _response(identifier, _complete({"tools": _listed_tools(config)}, cache=True))
     if method == "tools/call":
@@ -429,10 +441,10 @@ def _dispatch_request(config: AppConfig, message: Any) -> Optional[Dict[str, Any
     return _error(identifier, -32601, "Method not found: %s" % method)
 
 
-def handle_request(config: AppConfig, message: Any) -> Optional[Dict[str, Any]]:
+def handle_request(config: AppConfig, message: Any, *, refresh_config: bool = False) -> Optional[Dict[str, Any]]:
     identifier = _safe_identifier(message)
     try:
-        return _dispatch_request(config, message)
+        return _dispatch_request(config, message, refresh_config)
     except _InvalidRequestError as exc:
         return _error(identifier, -32600, "Invalid Request", str(exc))
     except _InvalidParamsError as exc:
@@ -453,7 +465,7 @@ def run_server(config: AppConfig) -> int:
         message: Any = None
         try:
             message = json.loads(line)
-            response = handle_request(config, message)
+            response = handle_request(config, message, refresh_config=True)
         except json.JSONDecodeError as exc:
             response = _error(None, -32700, "Parse error", str(exc))
         except Exception as exc:

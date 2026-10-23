@@ -15,6 +15,16 @@ It shows retained/omitted terms, active policy, eligible channel counts, and
 changed/unreadable candidate counts. Diagnostics do not save feedback or inspect
 excluded cards. Quotes prioritize words; they do not enforce exact phrases.
 
+Diagnostics also distinguish unknown/disabled collections, report per-channel
+SQL time in milliseconds, and show candidate rounds, limits and saturation.
+If stale/unreadable candidates leave too few results, search refills within the
+same policy and index snapshot: at most three rounds and 640 candidates per
+channel. `refill_exhausted` means more matches may exist beyond that budget;
+sync the known changed collection and retry. Saturation is a possible cutoff,
+not proof of more relevant evidence. Search never syncs or widens scope itself.
+Use `catalog` to inspect configured collection descriptions before choosing a
+different collection. Project/domain filters must also be retained on reads.
+
 If the needed passage is late in a returned chunk, use
 `read '<ref>' --query '<literal evidence terms>' --max-tokens 1200` (MCP fetch
 `query`). This reads an unchanged source window with chunk character offsets.
@@ -135,3 +145,24 @@ servers when upgrading, so their feedback writes use the current engine.
 Operational checks are `amem doctor`, `amem status --require-fresh`, and an
 evaluation set suited to the local corpus. Run `compact` after index erasure
 when readers are closed. Do not treat it as deletion of filesystem backups.
+
+## Evidence-aware evaluation
+
+`amem eval --file CASES.jsonl` keeps the legacy `relevant_paths` meaning: any
+matching path earns a retrieval hit. Optional `required_paths` instead requires
+every listed exact relative or absolute path in the visible search output.
+Optional `required_evidence` requires every `{path, text}` pair in actual source
+excerpts, not snippets, titles, paths or generated provenance. For example:
+
+```json
+{"query":"release","collection":"research","required_paths":["deploy.md","rollback.md"],"required_evidence":[{"path":"deploy.md","text":"staged rollout"},{"path":"rollback.md","text":"revert on failed checks"}],"read_limit":3,"read_max_bytes":1200}
+```
+
+Reads use the visible ranking and original query, never expected answer text or
+gold paths as navigation hints. Each unique ref is read at most once, with
+`read_limit` between 1 and 3 and `read_max_bytes` between 128 and 8,000. Defaults
+are 3 and 1,200. Only evidence cases issue reads. `project`, `domain`,
+`memory_status` and `shareable_only` apply to both search and read. The report
+includes missing requirements, read counts and bytes. Any unmet requirement
+fails the CLI gate even if legacy hit-rate thresholds pass. These checks measure
+literal evidence delivery, not final answer accuracy or unrestricted agent work.
