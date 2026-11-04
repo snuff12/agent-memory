@@ -5,6 +5,7 @@ recursive-include docs *.md
 recursive-include integrations *.md *.yaml *.plist run-incremental-sync
 recursive-include scripts *.py
 recursive-include tests *.py
+recursive-include tests/fixtures/continuity *.md *.jsonl
 recursive-include benchmarks *.py *.mjs *.md *.svg
 recursive-include benchmarks/results *.json
 recursive-include src/agent_memory/resources *.json *.jsonl *.md

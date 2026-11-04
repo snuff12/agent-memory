@@ -12,9 +12,10 @@ from pathlib import Path, PurePosixPath
 from typing import Optional, Sequence
 
 from . import __version__
+from .capture import capture_with_identity
 from .config import load_config, source_by_name
 from .database import MINIMUM_FTS_SECURE_DELETE_VERSION, connect, trigram_available
-from .evaluation import check_requirements, exact_path, requirements
+from .evaluation import check_requirements, exact_path, implementation_fingerprint, requirements
 from .feedback import (
     FAILURE_CATEGORIES,
     MAX_EXPORT_LIMIT,
@@ -135,6 +136,7 @@ def _parser() -> argparse.ArgumentParser:
     capture_parser.add_argument("--sensitivity", choices=("private", "shareable"), default="private")
     capture_parser.add_argument("--valid-from")
     capture_parser.add_argument("--review-after")
+    capture_parser.add_argument("--operation-id", help="Retry identity for one explicit save; conflicting inputs fail closed.")
 
     for scoped in (search_parser, read_parser, locate_parser, context_parser):
         scoped.add_argument("--project")
@@ -224,6 +226,12 @@ def _parser() -> argparse.ArgumentParser:
     eval_parser.add_argument("--max-average-units", type=float, default=3500.0)
     eval_parser.add_argument("--allow-budget-violations", type=int, default=0)
     eval_parser.add_argument("--json", action="store_true")
+    eval_parser.add_argument("--evidence-output", type=Path, help="Create a private answer-input packet containing only delivered evidence.")
+
+    answers_parser = subparsers.add_parser("eval-answers", help="Report separately reviewed answer interpretation against delivered evidence.")
+    for name in ("file", "evidence", "answers", "reviews"):
+        answers_parser.add_argument("--" + name, type=Path, required=True)
+    answers_parser.add_argument("--json", action="store_true")
 
     compact_parser = subparsers.add_parser(
         "compact",
@@ -590,42 +598,55 @@ def _capture(config, args: argparse.Namespace) -> Path:  # type: ignore[no-untyp
     body = args.body if args.body is not None else sys.stdin.read()
     if not body.strip():
         raise ValueError("capture body is empty")
-    created = utc_now()
-    date = created[:10]
     slug = slugify(args.title)
     safe_title = args.title.replace("\r", " ").replace("\n", " ").strip()
     safe_source = args.source.replace("\r", " ").replace("\n", " ").strip()
-    content = (
-        "---\n"
-        "title: %s\nkind: %s\nstatus: inbox\nconfidence: %s\nsource: %s\ncreated: %s\n"
-        "scope: %s\nsensitivity: %s\nvalid_from: %s\nreview_after: %s\n---\n\n%s\n" % (
-            json.dumps(safe_title, ensure_ascii=False),
-            args.kind,
-            args.confidence,
-            json.dumps(safe_source, ensure_ascii=False),
-            created,
-            json.dumps(args.scope, ensure_ascii=False), args.sensitivity,
-            json.dumps(args.valid_from) if args.valid_from else "null",
-            json.dumps(args.review_after) if args.review_after else "null",
-            body.strip(),
+    inputs = dict(title=safe_title, source=safe_source, body=body.strip(), kind=args.kind,
+                  confidence=args.confidence, scope=args.scope, sensitivity=args.sensitivity,
+                  valid_from=args.valid_from or None, review_after=args.review_after or None)
+
+    def render(created, identity=None):
+        content = (
+            "---\n"
+            "title: %s\nkind: %s\nstatus: inbox\nconfidence: %s\nsource: %s\ncreated: %s\n"
+            "scope: %s\nsensitivity: %s\nvalid_from: %s\nreview_after: %s\n---\n\n%s\n" % (
+                json.dumps(safe_title, ensure_ascii=False),
+                args.kind,
+                args.confidence,
+                json.dumps(safe_source, ensure_ascii=False),
+                created,
+                json.dumps(args.scope, ensure_ascii=False), args.sensitivity,
+                json.dumps(args.valid_from) if args.valid_from else "null",
+                json.dumps(args.review_after) if args.review_after else "null",
+                body.strip(),
+            )
         )
-    )
-    parsed = parse_memory(Path("candidate.md"), content)
-    if parsed["error"]:
-        raise ValueError(parsed["error"])
+        if identity:
+            content = content.replace("\n---\n\n", "\ncapture_operation: %s\n---\n\n" % json.dumps(identity), 1)
+        parsed = parse_memory(Path("candidate.md"), content)
+        if parsed["error"]:
+            raise ValueError(parsed["error"])
+        return content
+
+    operation_id = getattr(args, "operation_id", None)
+    created = utc_now() if operation_id is None else "2000-01-01T00:00:00Z"
+    content = render(created)  # Validate before generating or persisting an operation identity.
     with sync_lock(config):
         inbox = config.home / "vault" / "inbox"
         if (config.home / "vault").is_symlink() or inbox.is_symlink():
             raise ValueError("Memory vault and inbox must not be symlinks")
-        candidate = inbox / (date + "-" + slug + ".md")
-        counter = 2
-        while True:
-            try:
-                atomic_create_text(candidate, content, mode=0o600)
-                break
-            except FileExistsError:
-                candidate = inbox / (date + "-" + slug + "-%d.md" % counter)
-                counter += 1
+        if operation_id is not None:
+            candidate = capture_with_identity(config.home, operation_id, inputs, render)
+        else:
+            candidate = inbox / (created[:10] + "-" + slug + ".md")
+            counter = 2
+            while True:
+                try:
+                    atomic_create_text(candidate, content, mode=0o600)
+                    break
+                except FileExistsError:
+                    candidate = inbox / (created[:10] + "-" + slug + "-%d.md" % counter)
+                    counter += 1
         if not args.no_sync:
             vault_source = source_by_name(config, "vault")
             sync_source(config, vault_source)
@@ -718,7 +739,7 @@ def _compact(config) -> dict:  # type: ignore[no-untyped-def]
         }
 
 
-def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
+def _evaluate(config, path: Path, *, evidence_output=None) -> dict:  # type: ignore[no-untyped-def]
     total = positive_cases = negative_cases = hits_count = negative_passes = 0
     passed_cases = contamination_cases = contaminated_cases = budget_violations = 0
     reciprocal_sum = 0.0
@@ -726,6 +747,7 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
     max_search_units = 0
     requirement_cases = requirement_passes = read_operations = read_units = 0
     details = []
+    packets = []
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
             stripped = line.strip()
@@ -794,7 +816,18 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
                 if success:
                     hits_count += 1
                     reciprocal_sum += 1.0 / int(matched_rank)
-            evidence_check = check_requirements(config, query, visible_results, policy, required)
+            delivered = [] if evidence_output is not None else None
+            evidence_check = check_requirements(config, query, visible_results, policy, required, delivered=delivered)
+            if delivered is not None:
+                packets.append({"id": case.get("id"), "query": query, "evidence": delivered,
+                                "read_operations": evidence_check["read_operations"],
+                                "read_errors": evidence_check["read_errors"],
+                                "visible_results": [{"ref": hit.ref, "path": hit.path,
+                                                     "collection": hit.collection,
+                                                     "relative_path": hit.relative_path} for hit in visible_results],
+                                "search": rendered,
+                                "policy": {"memory_status": policy.status, "project": policy.project,
+                                           "domain": policy.domain, "shareable_only": policy.shareable_only}})
             if has_requirements:
                 requirement_cases += 1
                 requirement_passes += int(evidence_check["requirements_met"])
@@ -809,7 +842,7 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
                     "id": case.get("id"),
                     "category": case.get("category"),
                     "query": query,
-                    "success": success,
+                    "success": success and not contamination and not budget_violation,
                     "hit": matched_rank is not None,
                     "rank": matched_rank,
                     "matched_path": matched_path,
@@ -821,7 +854,13 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
                 }
             )
     hit_rate = hits_count / positive_cases if positive_cases else 0.0
+    if evidence_output is not None:
+        from .answer_evaluation import write_evidence_packet
+        write_evidence_packet(path, evidence_output, packets)
     return {
+        "engine_version": __version__,
+        "engine_sha256": implementation_fingerprint(),
+        "fixture_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "cases": total,
         "positive_cases": positive_cases,
         "negative_cases": negative_cases,
@@ -844,6 +883,8 @@ def _evaluate(config, path: Path) -> dict:  # type: ignore[no-untyped-def]
         "requirements_pass_rate": round(requirement_passes / requirement_cases, 4) if requirement_cases else 1.0,
         "read_operations": read_operations,
         "read_units": read_units,
+        "evaluation_layer": "evidence_delivery",
+        "interpretation_evaluated": False,
         "details": details,
     }
 
@@ -1083,7 +1124,7 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
             raise AssertionError("unhandled feedback command")
         if args.command == "eval":
             eval_path = args.file or (config.home / "eval" / "gold_queries.jsonl")
-            report = _evaluate(config, eval_path)
+            report = _evaluate(config, eval_path, evidence_output=args.evidence_output)
             passed = (
                 report["hit_rate_at_k"] >= args.fail_under
                 and report["mrr"] >= args.fail_under_mrr
@@ -1113,6 +1154,15 @@ def _main(argv: Optional[Sequence[str]] = None) -> int:
                 )
             ))
             return 0 if passed else 1
+        if args.command == "eval-answers":
+            from .answer_evaluation import evaluate_answers
+            report = evaluate_answers(args.file, args.evidence, args.answers, args.reviews)
+            print(json_dumps(report, pretty=True) if args.json else (
+                "cases=%d delivery=%d/%d interpretation=%d/%d unreviewed=%d invalid_citations=%d gate=%s" % (
+                    report["cases"], report["delivery_passes"], report["cases"],
+                    report["interpretation_passes"], report["cases"],
+                    report["unreviewed"], report["invalid_citations"], "pass" if report["passed"] else "fail")))
+            return 0 if report["passed"] else 1
         if args.command == "compact":
             report = _compact(config)
             print(

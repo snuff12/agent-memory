@@ -166,3 +166,17 @@ are 3 and 1,200. Only evidence cases issue reads. `project`, `domain`,
 includes missing requirements, read counts and bytes. Any unmet requirement
 fails the CLI gate even if legacy hit-rate thresholds pass. These checks measure
 literal evidence delivery, not final answer accuracy or unrestricted agent work.
+
+`eval --evidence-output PATH` explicitly creates a private packet of actual
+delivered reads, without gold requirements or answer rubrics. The separate
+`eval-answers` harness checks exact citations and explicitly reviewed, versioned
+rubric verdicts bound to that packet and answer. Missing review is not a pass.
+Reports keep delivery and interpretation failures separate; no model or judge
+is called automatically. See [the continuity guide](continuity-evaluation-and-capture.md).
+
+For an already authorized explicit save, optional `capture --operation-id ID`
+reuses one current candidate identity when meaningful inputs match and rejects
+conflicts. Preserve `capture_operation` during promotion. A missing or uncertain
+candidate is never recreated on retry; inspect the durable private receipt.
+ID-free calls still create separate candidates. Retry identity never grants
+capture authorization or review status.

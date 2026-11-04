@@ -1,7 +1,18 @@
 """Opt-in evidence checks for bounded, source-grounded retrieval evaluations."""
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 from .search import StaleReferenceError, _fetch_with_excerpt
+
+
+def implementation_fingerprint() -> str:
+    """Identify the installed engine source even between package releases."""
+    digest = hashlib.sha256()
+    for path in sorted(Path(__file__).parent.glob("*.py")):
+        digest.update(path.name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()
 
 
 def requirements(case: dict) -> tuple:
@@ -28,7 +39,7 @@ def exact_path(hit, path: str) -> bool:
     return path in (hit.path, hit.relative_path)
 
 
-def check_requirements(config, query, hits, policy, parsed: tuple) -> dict:
+def check_requirements(config, query, hits, policy, parsed: tuple, *, delivered=None) -> dict:
     paths, evidence, read_limit, read_bytes = parsed
     missing_paths = [path for path in paths if not any(exact_path(hit, path) for hit in hits)]
     found, seen = set(), set()
@@ -51,6 +62,11 @@ def check_requirements(config, query, hits, policy, parsed: tuple) -> dict:
                 errors.append({"ref": hit.ref, "error": type(exc).__name__})
                 continue
             units += len(rendered.encode("utf-8"))
+            if delivered is not None:
+                delivered.append({"ref": hit.ref, "path": hit.path,
+                                  "collection": hit.collection,
+                                  "relative_path": hit.relative_path,
+                                  "rendered": rendered, "excerpt": excerpt})
             found.update(index for index, item in enumerate(evidence)
                          if exact_path(hit, item["path"]) and item["text"] in excerpt)
     missing_evidence = [index for index in range(len(evidence)) if index not in found]
