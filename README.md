@@ -189,6 +189,11 @@ local runtime and model; see [the pilot](docs/semantic-pilot.md).
 and `required_evidence` (every literal must occur in a bounded source read).
 Legacy `relevant_paths` still means any matching path. See the
 [example and evaluation contract](docs/agent-contract.md#evidence-aware-evaluation).
+Separate synthetic continuity fixtures and reviewed answer interpretation are
+available through `eval --evidence-output` and `eval-answers`. Optional
+`capture --operation-id` protects retries of one explicit save, including
+uncertain outcomes and moved/deleted cards. See the
+[continuity and retry guide](docs/continuity-evaluation-and-capture.md).
 `search --explain` also reports collection state, bounded candidate refill and
 per-channel SQL timings. MCP reloads configuration for each tool request;
 changing feedback write mode requires restarting the server.

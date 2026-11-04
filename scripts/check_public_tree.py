@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 
-PRIVATE_ROOTS = {".state", ".amem", "vault", "knowledge", "feedback", "runtime", "implementation", "experiments", "eval"}
+PRIVATE_ROOTS = {".state", ".amem", "vault", "knowledge", "feedback", "capture-operations", "runtime", "implementation", "experiments", "eval"}
 BUILD_ROOTS = {".git", ".venv", "venv", "build", "dist"}
 PATH_PATTERNS = tuple(re.compile(rb"/" + name + rb"/[^/\s`\"']+/") for name in (b"Users", b"home"))
 KEY_PATTERN = re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")

@@ -68,7 +68,7 @@ class LiveRetrievalTests(unittest.TestCase):
 
     def test_identical_channels_keep_votes_with_one_query_and_batched_rows(self):
         for index in range(12):
-            (self.source / ("notes-%d.md" % index)).write_text("# Notes\n\nquartzmarker\n")
+            (self.source / ("notes-%02d.md" % index)).write_text("# Notes\n\nquartzmarker\n")
         sync_all(self.config)
         statements = []
         original = retrieval.connect

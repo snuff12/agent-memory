@@ -43,6 +43,9 @@ by vault path with its validation error.
 
 `amem capture` offers five kinds: fact, preference, episode, procedure, and
 decision. Concept, entity, and synthesis cards are written by hand.
+With optional `--operation-id`, a generated `capture_operation` field identifies
+one card across retries and promotion. Preserve it when moving/editing that card;
+it does not grant review status. See [retry behavior and retention](continuity-evaluation-and-capture.md#optional-identity-for-one-explicit-save).
 
 ## Rules
 

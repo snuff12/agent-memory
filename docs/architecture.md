@@ -27,6 +27,7 @@ flowchart TD
 | Private `vault/` | Explicitly captured and reviewed memories | No |
 | Private `.state/` | Disposable SQLite and optional vector projections | No |
 | Private `feedback/` | Durable opt-in retrieval failure queue | No |
+| Private `capture-operations/` | Durable optional capture retry receipts, without card bodies | No |
 | Private `runtime/` | Optional local semantic dependencies and models | No |
 
 The default private home is `~/.local/share/agent-memory`. `AMEM_HOME` and
